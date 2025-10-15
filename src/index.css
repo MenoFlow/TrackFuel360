@@ -1,0 +1,194 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* TrackFuel Design System - Automotive fuel tracking theme
+All colors MUST be HSL.
+*/
+.leaflet-container {
+  z-index: 0 !important;
+} 
+
+@layer base {
+  :root {
+
+    /* Base colors */
+    --background: 210 25% 97%;
+    --foreground: 215 25% 15%;
+
+    /* Card system */
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+
+
+
+
+
+
+
+
+        /* Fuel brand colors */
+        --primary1: 215 100% 35%; /* Deep fuel blue */
+        --primary-foreground1: 0 0% 98%;
+        --primary-glow1: 215 100% 50%;
+    
+        /* Economy green */
+    
+        --secondary1: 155 65% 45%; 
+        --secondary-foreground1: 0 0% 98%;
+        --secondary-glow1: 155 65% 60%;
+    
+        /* Neutral tones */
+        --muted1: 215 20% 95%;
+        --muted-foreground1: 215 15% 45%;
+    
+        /* Warning system */
+        --accent1: 35 100% 55%; /* Fuel orange */
+        --accent-foreground1: 0 0% 98%;
+        --accent-glow1: 35 100% 70%;
+    
+        /* Critical alert */
+        --destructive1: 0 85% 60%;
+        --destructive-foreground1: 0 0% 98%;
+        --destructive-glow1: 0 85% 75%;
+    
+        --muted1: 215 20% 95%;
+        --muted-foreground1: 215 15% 45%;
+
+
+
+
+
+
+
+
+
+    /* Fuel brand colors */
+    --primary: 215 100% 35%; 
+    --primary-foreground: 0 0% 98%;
+    --primary-glow: 215 100% 50%;
+
+    /* Couleurs secondaires - gris clair */
+    --secondary: 210 15% 96%;
+    --secondary-foreground: 220 20% 10%;
+    --secondary-glow: 155 65% 60%;
+
+    /* Neutral tones */
+    --muted: 215 20% 95%;
+    --muted-foreground: 215 15% 45%;
+
+    /* Warning system */
+    --accent: 210 90% 95%;
+    --accent-foreground: 210 90% 48%;
+    --accent-glow: 35 100% 70%;
+
+    /* Critical alert */
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --destructive-glow: 0 85% 75%;
+
+    /* UI elements */
+    --border: 215 20% 88%;
+    --input: 215 20% 95%;
+    --ring: 215 100% 35%;
+    --radius: 0.75rem;
+
+    /* Fuel level gradients */
+    --gradient-fuel-high: linear-gradient(135deg, hsl(155 65% 45%), hsl(155 65% 60%));
+    --gradient-fuel-medium: linear-gradient(135deg, hsl(35 100% 55%), hsl(35 100% 70%));
+    --gradient-fuel-low: linear-gradient(135deg, hsl(0 85% 60%), hsl(0 85% 75%));
+    --gradient-primary: linear-gradient(135deg, hsl(215 100% 35%), hsl(215 100% 50%));
+    
+    /* Shadows */
+    --shadow-fuel: 0 10px 30px -10px hsl(215 100% 35% / 0.2);
+    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.3);
+    --shadow-card: 0 4px 20px -4px hsl(215 25% 15% / 0.1);
+    
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 215 25% 8%;
+    --foreground: 215 20% 92%;
+
+    --card: 215 25% 10%;
+    --card-foreground: 215 20% 92%;
+
+    --popover: 215 25% 10%;
+    --popover-foreground: 215 20% 92%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary-glow: 215 100% 65%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --secondary-glow: 155 50% 55%;
+
+    --muted: 215 25% 15%;
+    --muted-foreground: 215 15% 60%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --accent-glow: 35 100% 75%;
+
+    --destructive: 0 85% 65%;
+    --destructive-foreground: 215 25% 8%;
+    --destructive-glow: 0 85% 80%;
+
+    --border: 215 25% 18%;
+    --input: 215 25% 15%;
+    --ring: 215 100% 50%;
+    
+    --gradient-fuel-high: linear-gradient(135deg, hsl(155 50% 40%), hsl(155 50% 55%));
+    --gradient-fuel-medium: linear-gradient(135deg, hsl(35 100% 60%), hsl(35 100% 75%));
+    --gradient-fuel-low: linear-gradient(135deg, hsl(0 85% 65%), hsl(0 85% 80%));
+    --gradient-primary: linear-gradient(135deg, hsl(215 100% 50%), hsl(215 100% 65%));
+    
+    --shadow-fuel: 0 10px 30px -10px hsl(215 100% 50% / 0.3);
+    --shadow-glow: 0 0 40px hsl(var(--primary-glow) / 0.4);
+    --shadow-card: 0 4px 20px -4px hsl(0 0% 0% / 0.3);
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
