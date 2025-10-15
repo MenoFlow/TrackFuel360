@@ -10,7 +10,7 @@ export const mockSites: Site[] = [
 export const mockUsers: User[] = [
   { id: 'u1', email: 'admin@trackfuel.com', matricule: 'ADM001', nom: 'Mukendi', prenom: 'Jean', role: 'admin' },
   { id: 'u2', email: 'manager@trackfuel.com', matricule: 'MGR001', nom: 'Kabila', prenom: 'Marie', role: 'manager', site_id: 's1' },
-  { id: 'u3', email: 'driver1@trackfuel.comr', matricule: 'DRV001', nom: 'Tshisekedi', prenom: 'Paul', role: 'driver', site_id: 's1' },
+  { id: 'u3', email: 'driver1@trackfuel.com', matricule: 'DRV001', nom: 'Tshisekedi', prenom: 'Paul', role: 'driver', site_id: 's1' },
   { id: 'u4', email: 'driver2@trackfuel.com', matricule: 'DRV002', nom: 'Mulamba', prenom: 'Joseph', role: 'driver', site_id: 's1' },
   { id: 'u5', email: 'supervisor@trackfuel.com', matricule: 'SUP001', nom: 'Ngoy', prenom: 'Sarah', role: 'supervisor', site_id: 's2' },
   { id: 'u6', email: 'audit@trackfuel.com', matricule: 'AUD001', nom: 'Mbuyi', prenom: 'Patrick', role: 'auditor' },
