@@ -6,17 +6,21 @@ import { Car, Fuel, AlertTriangle, DollarSign, TrendingUp, Activity } from 'luci
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
+import { staggerContainer, staggerItem } from '@/lib/utils/motionVariants';
+import { MotionWrapper } from '@/components/Layout/MotionWrapper';
 import { FleetMap } from "./fleet-map";
-import { TabsContent } from '@radix-ui/react-tabs';
 import { mockVehicules } from '@/lib/mockData';
 import { useNavigate } from 'react-router-dom';
-import { motion } from "framer-motion";
+
 
 const Dashboard = () => {
+  const { t } = useTranslation();
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: alertes, isLoading: alertesLoading } = useAlertes('new');
   const navigate = useNavigate();
-
+  
 
   if (statsLoading) {
     return (
@@ -34,79 +38,86 @@ const Dashboard = () => {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}          
-        className="flex flex-col items-center text-center sm:items-start sm:text-left"
-        >
-          <h1 className="text-3xl font-bold text-foreground">Tableau de bord</h1>
-          <p className="text-muted-foreground mt-2">
-            Vue d'ensemble de votre flotte
-          </p>
-        </motion.div>
-
+        <MotionWrapper variant="slideUp">
+          <div className="text-center sm:text-left">
+            <h1 className="text-3xl font-bold text-foreground">{t('dashboard.title')}</h1>
+            <p className="text-muted-foreground mt-2">{t('dashboard.overview')}</p>
+          </div>
+        </MotionWrapper>
 
         {/* Stats principales */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}        
+        <motion.div 
           className="grid gap-4 md:grid-cols-2 lg:grid-cols-4"
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
         >
-          <StatsCard
-            title="Véhicules actifs"
-            value={`${stats?.vehicules_actifs}/${stats?.total_vehicules}`}
-            icon={Car}
-            subtitle="Flotte totale"
-          />
-          <StatsCard
-            title="Alertes actives"
-            value={stats?.alertes_actives || 0}
-            icon={AlertTriangle}
-            subtitle="Nécessitent une action"
-          />
-          <StatsCard
-            title="Coût carburant (mois)"
-            value={`${stats?.cout_carburant_mois.toLocaleString('fr-FR')} $`}
-            icon={DollarSign}
-            subtitle={`${stats?.litres_mois.toLocaleString('fr-FR')} L consommés`}
-          />
-          <StatsCard
-            title="Consommation moyenne"
-            value={`${stats?.consommation_moyenne_flotte.toFixed(1)} L`}
-            icon={Activity}
-            subtitle={`${stats?.distance_mois_km.toLocaleString('fr-FR')} km parcourus en moyenne par mois`}
-          />
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}  
-        >
-          <FleetMap vehicles={mockVehicules} onVehicleSelect={(v) => navigate(`/vehicle/${v.id}`)} />
+          <MotionWrapper variant="stagger" delay={0}>
+            <StatsCard
+              title={t('dashboard.stats.activeVehicles')}
+              value={`${stats?.vehicules_actifs}/${stats?.total_vehicules}`}
+              icon={Car}
+              subtitle={t('dashboard.totalFleet')}
+            />
+          </MotionWrapper>
+          <MotionWrapper variant="stagger" delay={0.1}>
+            <StatsCard
+              title={t('dashboard.stats.activeAlerts')}
+              value={stats?.alertes_actives || 0}
+              icon={AlertTriangle}
+              subtitle={t('dashboard.requiresAction')}
+            />
+          </MotionWrapper>
+          <MotionWrapper variant="stagger" delay={0.2}>
+            <StatsCard
+              title={t('dashboard.stats.fuelCost')}
+              value={`${((stats?.cout_carburant_mois)*4510).toLocaleString('fr-FR')} Ariary`}
+              icon={DollarSign}
+              subtitle={`${stats?.litres_mois.toLocaleString('fr-FR')} L ${t('dashboard.consumed')}`}
+            />
+          </MotionWrapper>
+          <MotionWrapper variant="stagger" delay={0.3}>
+            <StatsCard
+              title={t('dashboard.stats.avgConsumption')}
+              value={`${stats?.consommation_moyenne_flotte.toFixed(1)} L`}
+              icon={Activity}
+              subtitle={`${stats?.distance_mois_km.toLocaleString('fr-FR')} km ${t('dashboard.traveled')}`}
+            />
+          </MotionWrapper>
         </motion.div>
 
-
-        {/* Top véhicules à forte consommation */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }} 
+          transition={{ delay: 0.3 }}  
         >
+          <FleetMap vehicles={mockVehicules} onVehicleSelect={(v) => navigate(`/vehicle/${v.immatriculation}`)} />
+        </motion.div>
+
+        {/* Top véhicules à forte consommation */}
+        <MotionWrapper variant="slideUp" delay={0.4}>
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5" />
-                Véhicules à forte consommation
+                {t('dashboard.highConsumptionVehicles')}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {stats?.top_vehicules_consommation.map((v) => (
-                  <div key={v.vehicule_id} className="flex items-center justify-between p-3 border border-border rounded-lg">
-                    <div className="flex items-center gap-3">
-                      <Car className="h-5 w-5 text-muted-foreground" />
+              <motion.div 
+                className="space-y-3"
+                variants={staggerContainer}
+                initial="initial"
+                animate="animate"
+              >
+                {stats?.top_vehicules_consommation.map((v, index) => (
+                  <motion.div 
+                    key={v.vehicule_id} 
+                    variants={staggerItem}
+                    className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 border border-border rounded-lg gap-3"
+                  >
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                      <Car className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                       <div>
                         <p className="font-medium text-foreground">{v.immatriculation}</p>
                         <p className="text-sm text-muted-foreground">{v.consommation.toFixed(1)} L/100km</p>
@@ -115,52 +126,61 @@ const Dashboard = () => {
                     <Badge variant={v.ecart_pourcentage > 20 ? "destructive" : "secondary"}>
                       +{v.ecart_pourcentage}%
                     </Badge>
-                  </div>
+                  </motion.div>
                 ))}
-              </div>
+              </motion.div>
             </CardContent>
           </Card>
-        </motion.div>
-        {/* Alertes récentes */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5" />
-              Alertes récentes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {alertesLoading ? (
-              <div className="space-y-3">
-                {[1, 2].map(i => <Skeleton key={i} className="h-20" />)}
-              </div>
-            ) : alertes && alertes.length > 0 ? (
-              <div className="space-y-3">
-                {alertes.slice(0, 5).map((alerte) => (
-                  <div key={alerte.id} className="p-3 border border-border rounded-lg">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium text-foreground">{alerte.titre}</p>
-                        <p className="text-sm text-muted-foreground mt-1">{alerte.description}</p>
-                      </div>
-                      <Badge 
-                        variant={alerte.score > 70 ? "destructive" : "secondary"}
-                        className="ml-2"
-                      >
-                        Score: {alerte.score}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-center py-8">Aucune alerte active</p>
-            )}
-          </CardContent>
-        </Card>
+        </MotionWrapper>
 
-        {/* <TabsContent value="map" className="space-y-4"> */}
-        {/* </TabsContent> */}
+        {/* Alertes récentes */}
+        <MotionWrapper variant="slideUp" delay={0.5}>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5" />
+                {t('dashboard.recentAlerts')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {alertesLoading ? (
+                <div className="space-y-3">
+                  {[1, 2].map(i => <Skeleton key={i} className="h-20" />)}
+                </div>
+              ) : alertes && alertes.length > 0 ? (
+                <motion.div 
+                  className="space-y-3"
+                  variants={staggerContainer}
+                  initial="initial"
+                  animate="animate"
+                >
+                  {alertes.slice(0, 5).map((alerte) => (
+                    <motion.div 
+                      key={alerte.id} 
+                      variants={staggerItem}
+                      className="p-3 border border-border rounded-lg"
+                    >
+                      <div className="flex flex-col sm:flex-row items-start sm:items-start justify-between gap-2">
+                        <div className="flex-1 w-full">
+                          <p className="font-medium text-foreground">{alerte.titre}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{alerte.description}</p>
+                        </div>
+                        <Badge 
+                          variant={alerte.score > 70 ? "destructive" : "secondary"}
+                          className="sm:ml-2 flex-shrink-0"
+                        >
+                          {t('dashboard.score')}: {alerte.score}
+                        </Badge>
+                      </div>
+                    </motion.div>
+                  ))}
+                </motion.div>
+              ) : (
+                <p className="text-muted-foreground text-center py-8">{t('dashboard.noActiveAlerts')}</p>
+              )}
+            </CardContent>
+          </Card>
+        </MotionWrapper>
       </div>
     </MainLayout>
   );

@@ -4,6 +4,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FileText, TrendingUp, TrendingDown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface RapportPreviewProps {
   rapport: RapportData | null;
@@ -11,6 +12,7 @@ interface RapportPreviewProps {
 }
 
 export const RapportPreview = ({ rapport, isLoading }: RapportPreviewProps) => {
+  const { t } = useTranslation();
   if (isLoading) {
     return (
       <Card>
@@ -25,42 +27,48 @@ export const RapportPreview = ({ rapport, isLoading }: RapportPreviewProps) => {
       </Card>
     );
   }
-
   if (!rapport) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
           <FileText className="h-12 w-12 text-muted-foreground mb-4" />
           <p className="text-muted-foreground">
-            Sélectionnez un type de rapport et configurez les filtres pour générer un aperçu
+            {t('rapport.emptyMessage')}
           </p>
         </CardContent>
       </Card>
     );
   }
-
+  
   const formatValue = (value: any): string => {
-    if (value === null || value === undefined) return 'N/A';
+    if (value === null || value === undefined) return t('rapport.na');
     if (typeof value === 'number') {
       return new Intl.NumberFormat('fr-FR', {
         minimumFractionDigits: 0,
         maximumFractionDigits: 2
       }).format(value);
     }
-    if (typeof value === 'boolean') return value ? 'Oui' : 'Non';
+    if (typeof value === 'boolean') return value ? t('rapport.yes') : t('rapport.no');
     return String(value);
   };
 
   const formatLabel = (key: string): string => {
-    return key
-      .replace(/_/g, ' ')
-      .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+    const labelKey = `rapport.labels.${key}`;
+    const translated = t(labelKey);
+    // Si la clé n'existe pas dans les fichiers de traduction, on fallback à une version formatée
+    if (translated === labelKey) {
+      return key
+        .replace(/_/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+    return translated;
   };
-
+  
+  
   return (
-    <div className="space-y-4 w-full">
+    <div className="space-y-4">
       {/* En-tête du rapport */}
       <Card>
         <CardHeader>
@@ -72,17 +80,17 @@ export const RapportPreview = ({ rapport, isLoading }: RapportPreviewProps) => {
               </p>
             </div>
             <Badge variant="outline">
-              {rapport.metadata.nb_lignes} ligne{rapport.metadata.nb_lignes > 1 ? 's' : ''}
+              {rapport.metadata.nb_lignes} {t('rapport.line')}{rapport.metadata.nb_lignes > 1 ? t('rapport.pluralSuffix') : ''}
             </Badge>
           </div>
         </CardHeader>
       </Card>
-
+  
       {/* Statistiques */}
       {rapport.statistiques && Object.keys(rapport.statistiques).length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Statistiques</CardTitle>
+            <CardTitle className="text-base">{t('rapport.statsTitle')}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -90,7 +98,7 @@ export const RapportPreview = ({ rapport, isLoading }: RapportPreviewProps) => {
                 if (typeof value === 'number' || typeof value === 'string') {
                   const isPositive = typeof value === 'number' && key.includes('ecart') && value > 0;
                   const isNegative = typeof value === 'number' && key.includes('ecart') && value < 0;
-                  
+  
                   return (
                     <div key={key} className="p-3 bg-muted/50 rounded-lg">
                       <div className="flex items-start justify-between">
@@ -108,12 +116,14 @@ export const RapportPreview = ({ rapport, isLoading }: RapportPreviewProps) => {
           </CardContent>
         </Card>
       )}
-
+  
       {/* Tableau de données */}
       {rapport.donnees.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Données ({rapport.donnees.length})</CardTitle>
+            <CardTitle className="text-base">
+              {t('rapport.dataTitle')} ({rapport.donnees.length})
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="rounded-md border overflow-x-auto">
@@ -142,22 +152,23 @@ export const RapportPreview = ({ rapport, isLoading }: RapportPreviewProps) => {
             </div>
             {rapport.donnees.length > 100 && (
               <p className="text-sm text-muted-foreground text-center mt-4">
-                Affichage des 100 premières lignes sur {rapport.donnees.length}
+                {t('rapport.displayLimit', { count: rapport.donnees.length })}
               </p>
             )}
           </CardContent>
         </Card>
       )}
-
+  
       {rapport.donnees.length === 0 && (
         <Card>
           <CardContent className="py-8 text-center">
             <p className="text-muted-foreground">
-              Aucune donnée ne correspond aux critères sélectionnés
+              {t('rapport.noData')}
             </p>
           </CardContent>
         </Card>
       )}
     </div>
   );
+  
 };

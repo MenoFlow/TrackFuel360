@@ -25,8 +25,8 @@ export const mockVehicules: Vehicule[] = [
 ];
 
 export const mockAffectations: Affectation[] = [
-  { id: 'af1', vehicule_id: 'v1', chauffeur_id: 'u3', date_debut: '2025-10-07T06:00:00Z', date_fin: '2025-12-12T00:00:01Z' },
-  { id: 'af2', vehicule_id: 'v2', chauffeur_id: 'u4', date_debut: '2025-09-21T05:00:00Z', date_fin: '2025-10-12T00:18:30Z' },
-  { id: 'af3', vehicule_id: 'v1', chauffeur_id: 'u3', date_debut: '2025-09-20T06:00:00Z', date_fin: '2025-12-12T18:30:00Z' },
-  { id: 'af4', vehicule_id: 'v1', chauffeur_id: 'u3', date_debut: '2025-09-22T07:00:00Z', date_fin: '2025-12-12T19:00:00Z' },
+  { id: 'af1', vehicule_id: 'CGO-123-AA', chauffeur_id: 'u3', date_debut: '2025-10-07T06:00:00Z', date_fin: '2025-12-12T14:00:00Z' },
+  { id: 'af2', vehicule_id: 'CGO-456-BB', chauffeur_id: 'u4', date_debut: '2025-09-21T05:00:00Z', date_fin: '2025-09-21T20:00:00Z' },
+  { id: 'af3', vehicule_id: 'CGO-123-AA', chauffeur_id: 'u3', date_debut: '2025-09-20T06:00:00Z', date_fin: '2025-09-20T18:30:00Z' },
+  { id: 'af4', vehicule_id: 'CGO-123-AA', chauffeur_id: 'u3', date_debut: '2025-09-22T07:00:00Z', date_fin: '2025-09-22T19:00:00Z' }
 ];

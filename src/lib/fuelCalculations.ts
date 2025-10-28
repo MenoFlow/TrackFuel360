@@ -1,4 +1,5 @@
-import { Vehicule} from '@/types';
+import { Vehicule, FuelStatus } from '@/types';
+
 import { getTripsByVehicleId } from "./mockData";
 import { getPleinsByVehiculeId } from "./mockData";
 
@@ -19,8 +20,8 @@ export interface VehicleWithData extends Vehicule {
 
 // Calcul du carburant restant en tenant compte des trajets ET des ravitaillements
 export const calculateFuelRemaining = (vehicle: Vehicule): number => {
-  const trajets = getTripsByVehicleId(vehicle.id);
-  const pleins = getPleinsByVehiculeId(vehicle.id);
+  const trajets = getTripsByVehicleId(vehicle.immatriculation);
+  const pleins = getPleinsByVehiculeId(vehicle.immatriculation);
   
   // Carburant de départ
   let fuelRemaining = vehicle.carburant_initial || 0;
@@ -60,8 +61,8 @@ export const getFuelStatus = (vehicle: Vehicule): 'critical' | 'low' | 'medium' 
 
 // Convertir un véhicule en VehicleWithData pour compatibilité
 export const vehicleToVehicleWithData = (vehicle: Vehicule): VehicleWithData => {
-  const trajets = getTripsByVehicleId(vehicle.id);
-  const pleins = getPleinsByVehiculeId(vehicle.id);
+  const trajets = getTripsByVehicleId(vehicle.immatriculation);
+  const pleins = getPleinsByVehiculeId(vehicle.immatriculation);
   
   return {
     ...vehicle,
@@ -83,3 +84,27 @@ export const vehicleToVehicleWithData = (vehicle: Vehicule): VehicleWithData => 
 export const getAllVehiclesWithData = (vehicles: Vehicule[]): VehicleWithData[] => {
   return vehicles.map(vehicleToVehicleWithData);
 };
+
+// export function calculateFuelPercentage(vehicle: Vehicule): number {
+//   return (vehicle.niveau_carburant_actuel / vehicle.capacite_reservoir) * 100;
+// }
+
+export function getFuelStatusColor(status: FuelStatus): string {
+  switch (status) {
+    case 'critical': return '#ef4444';
+    case 'low': return '#f97316';
+    case 'medium': return '#eab308';
+    case 'high': return '#22c55e';
+    default: return '#6b7280';
+  }
+}
+
+export function getFuelStatusLabel(status: FuelStatus): string {
+  switch (status) {
+    case 'critical': return 'Critique';
+    case 'low': return 'Faible';
+    case 'medium': return 'Moyen';
+    case 'high': return 'Normal';
+    default: return 'Inconnu';
+  }
+}

@@ -38,8 +38,8 @@ export default function VehicleDetail() {
     );
   }
 
-  const trips = getTripsByVehicleId(vehicle.id);
-  const refuels = getRefuelsByVehicleId(vehicle.id);
+  const trips = getTripsByVehicleId(vehicle.immatriculation);
+  const refuels = getRefuelsByVehicleId(vehicle.immatriculation);
 
   // Mock OCR data for demonstration
   const mockOcrData = {
@@ -118,7 +118,7 @@ export default function VehicleDetail() {
   return (
     <MainLayout>
     
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted p-4 space-y-6">
+      <div className="min-h-screen from-background to-muted p-4 space-y-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -138,7 +138,7 @@ export default function VehicleDetail() {
             {/* <FuelAdjustmentDialog vehicle={vehicle} onFuelUpdate={() => {}} /> */}
             {/* <RefuelDialog vehicle={vehicle} onRefuelAdd={() => {}} /> */}
             {/* <FillForm 
-              vehicleId={Number(vehicle.id)}
+              vehicleId={Number(vehicle.immatriculation)}
               vehicleName={vehicle.marque}
               onSubmit={handleFillSubmit}
             /> */}

@@ -47,7 +47,7 @@ export interface RapportMetadata {
   date_generation: string;
   utilisateur_id: string;
   utilisateur_nom: string;
-  filtres: RapportFilters;
+  filtres?: RapportFilters;
   nb_lignes: number;
   format?: FormatExport;
 }
@@ -65,7 +65,6 @@ export interface RapportData {
     [key: string]: any;
   };
 }
-
 
 export interface User {
   id: string;
@@ -90,6 +89,11 @@ export interface Vehicule {
   carburant_initial?: number; // Litres
 }
 
+export interface VehicleWithPosition extends Vehicule {
+  position: [number, number];
+}
+
+
 export interface Site {
   id: string;
   nom: string;
@@ -105,6 +109,8 @@ export interface Affectation {
   date_fin: string;
 }
 
+
+
 export interface TraceGPSPoint {
   id: string;
   trajet_id: string;
@@ -112,6 +118,7 @@ export interface TraceGPSPoint {
   latitude: number;
   longitude: number;
   timestamp?: string;
+  traceGps?: any
 }
 
 export interface Trajet {
@@ -121,8 +128,6 @@ export interface Trajet {
   date_debut: string;
   date_fin: string;
   distance_km: number;
-  odometre_debut?: number;
-  odometre_fin?: number;
   type_saisie: SaisieType;
   traceGps?: any;
 }
@@ -208,7 +213,6 @@ export interface Correction {
   old_value: any;
   new_value: any;
   status: CorrectionStatus;
-  // reason: string;
   comment?: string;
   requested_by: string;
   requested_at: string;
@@ -224,14 +228,36 @@ export interface GeofencePoint {
   longitude: number;
 }
 
+export type GeofenceType = 'depot' | 'station' | 'zone_risque';
+
 export interface Geofence {
   id: string;
   nom: string;
-  type: 'depot' | 'station' | 'zone_risque';
-  lat: number; // Latitude du centre
-  lon: number; // Longitude du centre
-  rayon_metres: number; // Rayon en mètres
-  site_id?: string;
+  type: GeofenceType;
+  lat: number;
+  lon: number;
+  rayon_metres: number;
+}
+
+export type FuelStatus = 'critical' | 'low' | 'medium' | 'high';
+
+export interface FilterState {
+  showCritical: boolean;
+  showLow: boolean;
+  showMedium: boolean;
+  showHigh: boolean;
+}
+
+export interface Alert {
+  id: string;
+  vehicleId: string;
+  vehicleImmatriculation: string;
+  vehicleModele: string;
+  geofenceId: string;
+  geofenceName: string;
+  timestamp: string;
+  coordinates: [number, number];
+  isRead: boolean;
 }
 
 export interface ConsommationStats {
@@ -260,3 +286,19 @@ export interface DashboardStats {
     ecart_pourcentage: number;
   }>;
 }
+export const DATA_TYPES = [
+  { value: 'Geofence', label: 'Geofence', dependencies: [] },
+  { value: 'Site', label: 'Site', dependencies: [] },
+  { value: 'User', label: 'Utilisateurs', dependencies: [] },
+  { value: 'Vehicule', label: 'Véhicules', dependencies: ['Site'] },
+  { value: 'Affectation', label: 'Affectations', dependencies: ['Vehicule', 'User'] },
+  { value: 'Trajet', label: 'Trajets', dependencies: ['Vehicule', 'User'] },
+  { value: 'TraceGPSPoint', label: 'Points GPS', dependencies: ['Trajet'] },
+  { value: 'Plein', label: 'Pleins', dependencies: ['Vehicule', 'User'] },
+  { value: 'PleinExifMetadata', label: 'Métadonnées EXIF', dependencies: ['Plein'] },
+  { value: 'NiveauCarburant', label: 'Niveaux Carburant', dependencies: ['Vehicule'] },
+  { value: 'ParametresDetection', label: 'Paramètres Détection', dependencies: [] },
+  { value: 'Alerte', label: 'Alertes', dependencies: ['Vehicule'] },
+  { value: 'Correction', label: 'Corrections', dependencies: [] },
+  { value: 'RapportMetadata', label: 'Rapports', dependencies: ['User'] },
+] as const;

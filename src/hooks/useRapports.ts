@@ -9,8 +9,8 @@ import { mockCorrections } from '@/lib/data/mockData.corrections';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Stockage local des rapports générés
-let rapportsGeneres: RapportMetadata[] = [];
+// Stockage local des rapports générés avec données complètes
+let rapportsGeneres: RapportData[] = [];
 
 /**
  * Hook pour générer un rapport
@@ -42,8 +42,8 @@ export const useGenererRapport = () => {
         currentUser
       );
       
-      // Stocker les métadonnées pour l'historique
-      rapportsGeneres = [rapport.metadata, ...rapportsGeneres].slice(0, 50); // Max 50 rapports
+      // Stocker le rapport complet (avec données) pour l'historique
+      rapportsGeneres = [rapport, ...rapportsGeneres].slice(0, 50); // Max 50 rapports
       
       return rapport;
     },
@@ -61,7 +61,7 @@ export const useHistoriqueRapports = () => {
     queryKey: ['rapports-historique'],
     queryFn: async (): Promise<RapportMetadata[]> => {
       await delay(300);
-      return rapportsGeneres;
+      return rapportsGeneres.map(r => r.metadata);
     },
   });
 };
@@ -72,9 +72,9 @@ export const useHistoriqueRapports = () => {
 export const useRapport = (rapportId: string) => {
   return useQuery({
     queryKey: ['rapport', rapportId],
-    queryFn: async (): Promise<RapportMetadata | null> => {
+    queryFn: async (): Promise<RapportData | null> => {
       await delay(200);
-      return rapportsGeneres.find(r => r.id === rapportId) || null;
+      return rapportsGeneres.find(r => r.metadata.id === rapportId) || null;
     },
     enabled: !!rapportId
   });
@@ -89,7 +89,7 @@ export const useSupprimerRapport = () => {
   return useMutation({
     mutationFn: async (rapportId: string): Promise<void> => {
       await delay(200);
-      rapportsGeneres = rapportsGeneres.filter(r => r.id !== rapportId);
+      rapportsGeneres = rapportsGeneres.filter(r => r.metadata.id !== rapportId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rapports-historique'] });

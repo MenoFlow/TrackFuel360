@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MainLayout } from '@/components/Layout/MainLayout';
+import { MotionLayout } from '@/components/Layout/MotionLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,10 +14,10 @@ import { RapportPreview } from '@/components/Rapports/RapportPreview';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { motion } from "framer-motion";
-
+import { useTranslation } from 'react-i18next';
 
 const Rapports = () => {
+  const { t } = useTranslation();
   const [selectedType, setSelectedType] = useState<RapportType>('mensuel_site');
   const [filtres, setFiltres] = useState<RapportFilters>({});
   const [rapportGenere, setRapportGenere] = useState<RapportData | null>(null);
@@ -26,17 +27,17 @@ const Rapports = () => {
   const genererMutation = useGenererRapport();
 
   const rapportTypes: { value: RapportType; label: string }[] = [
-    { value: 'mensuel_site', label: 'Rapport mensuel par site/véhicule' },
-    { value: 'top_ecarts', label: 'Top 10 des écarts de consommation' },
-    { value: 'anomalies', label: 'Rapport des anomalies' },
-    { value: 'corrections', label: 'Rapport des corrections' },
-    { value: 'comparaison', label: 'Comparaison inter-sites' },
-    { value: 'kpi_global', label: 'KPI globaux' },
+    { value: 'mensuel_site', label: t('reports.types.mensuel_site') },
+    { value: 'top_ecarts', label: t('reports.types.top_ecarts') },
+    { value: 'anomalies', label: t('reports.types.anomalies') },
+    { value: 'corrections', label: t('reports.types.corrections') },
+    { value: 'comparaison', label: t('reports.types.comparaison') },
+    { value: 'kpi_global', label: t('reports.types.kpi_global') },
   ];
 
   const handleGenerer = async () => {
     if (!currentUser) {
-      toast.error('Utilisateur non connecté');
+      toast.error(t('errors.notConnected'));
       return;
     }
 
@@ -47,9 +48,9 @@ const Rapports = () => {
         currentUser
       });
       setRapportGenere(rapport);
-      toast.success('Rapport généré avec succès');
+      toast.success(t('success.reportGenerated'));
     } catch (error) {
-      toast.error('Erreur lors de la génération du rapport');
+      toast.error(t('errors.reportGeneration'));
     }
   };
 
@@ -57,9 +58,9 @@ const Rapports = () => {
     if (!rapportGenere) return;
     try {
       exporterRapport(rapportGenere, formatExport);
-      toast.success(`Rapport exporté en ${formatExport.toUpperCase()}`);
+      toast.success(`${t('success.reportExported')} ${formatExport.toUpperCase()}`);
     } catch (error) {
-      toast.error('Erreur lors de l\'export');
+      toast.error(t('errors.reportExport'));
     }
   };
 
@@ -68,39 +69,29 @@ const Rapports = () => {
     const lien = genererLienExportSecurise(rapportGenere.metadata.id, 'pdf', 24);
     const success = await copierDansPressePapier(lien);
     if (success) {
-      toast.success('Lien copié dans le presse-papier (valable 24h)');
+      toast.success(t('success.linkCopied'));
     } else {
-      toast.error('Erreur lors de la copie du lien');
+      toast.error(t('errors.linkCopy'));
     }
   };
 
   return (
     <MainLayout>
-      <div className="space-y-6">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className='text-center sm:text-start'
-        >
-          <h1 className="text-3xl font-bold text-foreground">Rapports</h1>
-          <p className="text-muted-foreground mt-2">
-            Générez et exportez vos rapports dans différents formats
-          </p>
-        </motion.div>
+      <MotionLayout variant="slideUp">
+        <div className="space-y-6">
+          <div className="text-center sm:text-left">
+            <h1 className="text-3xl font-bold text-foreground">{t('reports.title')}</h1>
+            <p className="text-muted-foreground mt-2">
+              {t('reports.generateAndExport')}
+            </p>
+          </div>
 
-        <div className="grid gap-6 lg:grid-cols-3">
-
-          <div className="lg:col-span-2 space-y-6">
-            {/* Sélection du type */}
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2 space-y-6">
+              {/* Sélection du type */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Type de rapport</CardTitle>
+                  <CardTitle className="text-lg">{t('reports.reportType')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Select value={selectedType} onValueChange={(v) => setSelectedType(v as RapportType)}>
@@ -117,87 +108,67 @@ const Rapports = () => {
                   </Select>
                 </CardContent>
               </Card>
-            </motion.div>
 
-            {/* Filtres */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
+              {/* Filtres */}
               <RapportFiltersComponent
                 filtres={filtres}
                 onFiltresChange={setFiltres}
                 onReset={() => setFiltres({})}
                 selectedType={selectedType}
               />
-            </motion.div>
 
-            {/* Actions */}
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="flex gap-3"
-            >
-              <Button onClick={handleGenerer} disabled={genererMutation.isPending} className="flex-1">
-                {genererMutation.isPending ? 'Génération...' : 'Générer le rapport'}
-              </Button>
-            </motion.div>
+              {/* Actions */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button 
+                  onClick={handleGenerer} 
+                  disabled={genererMutation.isPending} 
+                  className="w-full sm:flex-1"
+                >
+                  {genererMutation.isPending ? t('reports.generating') : t('reports.generateReport')}
+                </Button>
+              </div>
 
-            {/* Aperçu */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="max-w-[89vw] overflow-x-auto"
-            >
+              {/* Aperçu */}
               <RapportPreview rapport={rapportGenere} isLoading={genererMutation.isPending} />
-            </motion.div>
-          </div>
+            </div>
 
-          <div className="space-y-6">
-            {/* Export */}
-            {rapportGenere && (
+            <div className="space-y-6">
+              {/* Export */}
+              {rapportGenere && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base">{t('reports.export')}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <Button variant="outline" className="w-full justify-start" onClick={() => handleExport('pdf')}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      {t('reports.formats.pdf')}
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start" onClick={() => handleExport('excel')}>
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      {t('reports.formats.excel')}
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start" onClick={() => handleExport('csv')}>
+                      <Download className="h-4 w-4 mr-2" />
+                      {t('reports.formats.csv')}
+                    </Button>
+                    <Button variant="outline" className="w-full justify-start" onClick={handleCopyLink}>
+                      <Copy className="h-4 w-4 mr-2" />
+                      {t('reports.copyLink')}
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Historique */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Export</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button variant="outline" className="w-full justify-start" onClick={() => handleExport('pdf')}>
-                    <FileText className="h-4 w-4 mr-2" />
-                    PDF
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start" onClick={() => handleExport('excel')}>
-                    <FileSpreadsheet className="h-4 w-4 mr-2" />
-                    Excel
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start" onClick={() => handleExport('csv')}>
-                    <Download className="h-4 w-4 mr-2" />
-                    CSV
-                  </Button>
-                  <Button variant="outline" className="w-full justify-start" onClick={handleCopyLink}>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copier lien
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Historique */}
-            <motion.div
-              initial = {{ opacity: 0, x: 20 }}
-              animate = {{ opacity: 1, x: 0 }}
-              transition = {{ delay: 0.4 }}
-            >
-              <Card className='mb-4'>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
                     <Clock className="h-4 w-4" />
-                    Historique
+                    {t('reports.history')}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className='mb-4'>
+                <CardContent>
                   {historique && historique.length > 0 ? (
                     <div className="space-y-2">
                       {historique.slice(0, 5).map(h => (
@@ -210,14 +181,14 @@ const Rapports = () => {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Aucun rapport récent</p>
+                    <p className="text-sm text-muted-foreground">{t('reports.noRecentReports')}</p>
                   )}
                 </CardContent>
               </Card>
-            </motion.div>
+            </div>
           </div>
         </div>
-      </div>
+      </MotionLayout>
     </MainLayout>
   );
 };

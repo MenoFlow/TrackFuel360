@@ -40,7 +40,7 @@ export function generateAlertes(
   
   // 1. Vérifier les pleins hors zone
   pleins.forEach(plein => {
-    const vehicule = vehicules.find(v => v.id === plein.vehicule_id);
+    const vehicule = vehicules.find(v => v.immatriculation === plein.vehicule_id);
     if (vehicule) {
       const alerte = detectPleinHorsZone(plein, stationsAutorisees, vehicule);
       if (alerte) alertes.push(alerte);
@@ -55,14 +55,14 @@ export function generateAlertes(
   });
   
   // 3. Vérifier écarts GPS vs odomètre
-  trajets.forEach(trajet => {
-    const alerte = detectEcartDistanceGPS(trajet, params.seuil_ecart_gps_pct);
-    if (alerte) alertes.push(alerte);
-  });
+  // trajets.forEach(trajet => {
+  //   const alerte = detectEcartDistanceGPS(trajet, params.seuil_ecart_gps_pct);
+  //   if (alerte) alertes.push(alerte);
+  // });
   
   // 4. Détecter carburant disparu pour chaque plein
   pleins.forEach(plein => {
-    const vehicule = vehicules.find(v => v.id === plein.vehicule_id);
+    const vehicule = vehicules.find(v => v.immatriculation === plein.vehicule_id);
     if (!vehicule) return;
     
     const niveauAvantPlein = niveauxCarburant.find(
@@ -104,7 +104,7 @@ export function generateAlertes(
   // 5. Détecter surconsommation pour chaque véhicule actif
   vehicules.filter(v => v.actif).forEach(vehicule => {
     const consoMoyenne = calculerConsommationMoyenne(
-      vehicule.id,
+      vehicule.immatriculation,
       params.periode_consommation_jours,
       trajets,
       niveauxCarburant,
@@ -119,7 +119,7 @@ export function generateAlertes(
   
   // 6. Détecter immobilisation anormale pour chaque véhicule
   vehicules.filter(v => v.actif).forEach(vehicule => {
-    const immobilisation = calculerDureeImmobilisation(vehicule.id, trajets, traceGPSPoints);
+    const immobilisation = calculerDureeImmobilisation(vehicule.immatriculation, trajets, traceGPSPoints);
     if (immobilisation) {
       const alerteImmob = detectImmobilisationAnormale(
         vehicule,

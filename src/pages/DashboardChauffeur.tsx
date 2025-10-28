@@ -3,27 +3,36 @@ import { useVehicules } from '@/hooks/useVehicules';
 import { usePleins } from '@/hooks/usePleins';
 import { useTrajets } from '@/hooks/useTrajets';
 import { useAlertes } from '@/hooks/useAlertes';
-import { mockAffectations } from '@/lib/mockData';
+import { useAffectations } from '@/hooks/useAffectations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Car, Fuel, Route, AlertTriangle, Plus, FileEdit, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { motion } from 'framer-motion';
+import { staggerContainer, staggerItem } from '@/lib/utils/motionVariants';
+import { MotionWrapper } from '@/components/Layout/MotionWrapper';
+import Header from '@/components/Chauffeur/Header';
 
 export default function DashboardChauffeur() {
+  const { t } = useTranslation();
   const { currentUser, logout, filterVehiculesForDriver, filterDataForDriver } = useChauffeurAccess();
   const { data: allVehicules, isLoading: vehiculesLoading } = useVehicules();
   const { data: allPleins, isLoading: pleinsLoading } = usePleins();
   const { data: allTrajets, isLoading: trajetsLoading } = useTrajets();
   const { data: allAlertes, isLoading: alertesLoading } = useAlertes();
+  const { data: affectations } = useAffectations();
 
   if (!currentUser) {
     return null;
   }
 
   // Filtrer les données pour le chauffeur
-  const mesVehicules = allVehicules ? filterVehiculesForDriver(allVehicules, mockAffectations) : [];
+  const mesVehicules = allVehicules && affectations 
+    ? filterVehiculesForDriver(allVehicules, affectations) 
+    : [];
   const mesPleins = allPleins ? filterDataForDriver(allPleins) : [];
   const mesTrajets = allTrajets ? filterDataForDriver(allTrajets) : [];
   const mesAlertes = allAlertes ? allAlertes.filter(a => 
@@ -46,142 +55,150 @@ export default function DashboardChauffeur() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">TrackFuel360</h1>
-            <p className="text-sm text-muted-foreground">Espace Chauffeur</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-medium text-foreground">{currentUser.prenom} {currentUser.nom}</p>
-              <p className="text-xs text-muted-foreground">{currentUser.matricule}</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={logout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Déconnexion
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Header currentUser={currentUser} logout={logout} isDashboard={true} />
 
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="mx-12 p-6 space-y-6">
         {/* Bienvenue */}
-        <div>
-          <h2 className="text-3xl font-bold text-foreground">Bonjour {currentUser.prenom} !</h2>
-          <p className="text-muted-foreground mt-2">Voici un résumé de votre activité</p>
-        </div>
+        <MotionWrapper variant="slideUp">
+          <div className="text-center sm:text-left">
+            <h2 className="text-3xl font-bold text-foreground">{t('driver.welcome')} {currentUser.prenom} !</h2>
+            <p className="text-muted-foreground mt-2">{t('driver.activitySummary')}</p>
+          </div>
+        </MotionWrapper>
 
         {/* Actions rapides */}
-        <div className="grid gap-4 md:grid-cols-2">
-          <Link to="/chauffeur/ajouter-plein">
+        <motion.div 
+          className="grid gap-4 md:grid-cols-2"
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+        >
+          <MotionWrapper variant="stagger" delay={0} as="div">
+            <Link to="/chauffeur/ajouter-plein">
             <Card className="cursor-pointer hover:border-primary transition-colors">
               <CardContent className="flex items-center gap-4 p-6">
                 <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
                   <Plus className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">Ajouter un plein</h3>
-                  <p className="text-sm text-muted-foreground">Enregistrer un nouveau plein de carburant</p>
+                  <h3 className="font-semibold text-foreground">{t('driver.addFuel')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('driver.addFuelDesc')}</p>
                 </div>
               </CardContent>
             </Card>
           </Link>
-          <Link to="/chauffeur/demande-correction">
+          </MotionWrapper>
+          <MotionWrapper variant="stagger" delay={0.1} as="div">
+            <Link to="/chauffeur/demande-correction">
             <Card className="cursor-pointer hover:border-primary transition-colors">
               <CardContent className="flex items-center gap-4 p-6">
                 <div className="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center">
                   <FileEdit className="h-6 w-6 text-secondary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-foreground">Demande de correction</h3>
-                  <p className="text-sm text-muted-foreground">Corriger un trajet ou un plein</p>
+                  <h3 className="font-semibold text-foreground">{t('driver.requestCorrection')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('driver.requestCorrectionDesc')}</p>
                 </div>
               </CardContent>
             </Card>
           </Link>
-        </div>
+          </MotionWrapper>
+        </motion.div>
 
         {/* Statistiques */}
-        <div className="grid gap-4 md:grid-cols-3">
-          <Card>
+        <motion.div 
+          className="grid gap-4 md:grid-cols-3"
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+        >
+          <MotionWrapper variant="stagger" delay={0}>
+            <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Car className="h-4 w-4 text-muted-foreground" />
-                Mes véhicules
+                {t('driver.myVehicles')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold text-foreground">{mesVehicules.length}</p>
-              <p className="text-xs text-muted-foreground mt-1">Véhicules assignés</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('driver.vehiclesAssigned')}</p>
             </CardContent>
           </Card>
+          </MotionWrapper>
 
-          <Card>
+          <MotionWrapper variant="stagger" delay={0.1}>
+            <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Fuel className="h-4 w-4 text-muted-foreground" />
-                Pleins ce mois
+                {t('driver.fuelThisMonth')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold text-foreground">{mesPleins.length}</p>
-              <p className="text-xs text-muted-foreground mt-1">Pleins enregistrés</p>
+              <p className="text-xs text-muted-foreground mt-1">{t('driver.fuelsRecorded')}</p>
             </CardContent>
           </Card>
+          </MotionWrapper>
 
-          <Card>
+          <MotionWrapper variant="stagger" delay={0.2}>
+            <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <Route className="h-4 w-4 text-muted-foreground" />
-                Trajets ce mois
+                {t('driver.tripsThisMonth')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold text-foreground">{mesTrajets.length}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                {mesTrajets.reduce((sum, t) => sum + t.distance_km, 0).toFixed(0)} km parcourus
+                {mesTrajets.reduce((sum, t) => sum + t.distance_km, 0).toFixed(0)} {t('driver.kmTraveled')}
               </p>
             </CardContent>
           </Card>
-        </div>
+          </MotionWrapper>
+        </motion.div>
 
         {/* Mes véhicules */}
-        <Card>
+        <MotionWrapper variant="slideUp" delay={0.3}>
+          <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Car className="h-5 w-5" />
-              Mes véhicules assignés
+              {t('driver.myAssignedVehicles')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {mesVehicules.length > 0 ? (
               <div className="space-y-3">
                 {mesVehicules.map((v) => (
-                  <div key={v.id} className="flex items-center justify-between p-3 border border-border rounded-lg">
+                  <div key={v.immatriculation} className="flex items-center justify-between p-3 border border-border rounded-lg">
                     <div>
                       <p className="font-medium text-foreground">{v.immatriculation}</p>
                       <p className="text-sm text-muted-foreground">{v.marque} {v.modele}</p>
                     </div>
                     <Badge variant={v.actif ? "default" : "secondary"}>
-                      {v.actif ? 'Actif' : 'Inactif'}
+                      {v.actif ? t('vehicles.active') : t('vehicles.inactive')}
                     </Badge>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-center py-8">Aucun véhicule assigné</p>
+              <p className="text-muted-foreground text-center py-8">{t('driver.noVehicleAssigned')}</p>
             )}
           </CardContent>
         </Card>
+        </MotionWrapper>
 
         {/* Alertes me concernant */}
         {mesAlertes.length > 0 && (
-          <Card>
+          <MotionWrapper variant="slideUp" delay={0.4}>
+            <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5" />
-                Alertes me concernant
+                {t('driver.alertsAboutMe')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -194,14 +211,15 @@ export default function DashboardChauffeur() {
                         <p className="text-sm text-muted-foreground mt-1">{alerte.description}</p>
                       </div>
                       <Badge variant={alerte.score > 70 ? "destructive" : "secondary"}>
-                        Score: {alerte.score}
+                        {t('dashboard.score')}: {alerte.score}
                       </Badge>
                     </div>
                   </div>
                 ))}
-              </div>
-            </CardContent>
-          </Card>
+                </div>
+              </CardContent>
+            </Card>
+          </MotionWrapper>
         )}
       </div>
     </div>

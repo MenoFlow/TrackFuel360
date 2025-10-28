@@ -5,7 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { User } from '@/types';
 import { useState, useEffect } from 'react';
-import { mockSites } from '@/lib/mockData';
+import { useSites } from '@/hooks/useSites';
+import { useTranslation } from 'react-i18next';
+import { Eye, EyeOff } from 'lucide-react';
 
 interface UserFormDialogProps {
   open: boolean;
@@ -16,6 +18,10 @@ interface UserFormDialogProps {
 }
 
 export const UserFormDialog = ({ open, onOpenChange, user, onSubmit, isLoading }: UserFormDialogProps) => {
+  const { t } = useTranslation();
+  const { data: sites } = useSites();
+  const [showPassword, setShowPassword] = useState(false);
+  const [password, setPassword] = useState('');
   const [formData, setFormData] = useState<Omit<User, 'id'>>({
     email: '',
     matricule: '',
@@ -34,6 +40,7 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSubmit, isLoading }
         role: user.role,
         site_id: user.site_id,
       });
+      setPassword('');
     } else {
       setFormData({
         email: '',
@@ -42,12 +49,20 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSubmit, isLoading }
         prenom: '',
         role: 'driver',
       });
+      setPassword('');
     }
-  }, [user]);
+    setShowPassword(false);
+  }, [user, open]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    const submitData = { ...formData };
+    if (!user && password) {
+      (submitData as any).password = password;
+    } else if (user && password) {
+      (submitData as any).password = password;
+    }
+    onSubmit(submitData);
   };
 
   return (
@@ -55,14 +70,14 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSubmit, isLoading }
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>
-            {user ? 'Modifier l\'utilisateur' : 'Nouvel utilisateur'}
+            {user ? t('users.editUser') : t('users.newUser')}
           </DialogTitle>
         </DialogHeader>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="prenom">Prénom</Label>
+              <Label htmlFor="prenom">{t('users.firstName')}</Label>
               <Input
                 id="prenom"
                 value={formData.prenom}
@@ -71,7 +86,7 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSubmit, isLoading }
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="nom">Nom</Label>
+              <Label htmlFor="nom">{t('users.lastName')}</Label>
               <Input
                 id="nom"
                 value={formData.nom}
@@ -82,7 +97,7 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSubmit, isLoading }
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t('users.email')}</Label>
             <Input
               id="email"
               type="email"
@@ -93,7 +108,7 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSubmit, isLoading }
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="matricule">Matricule</Label>
+            <Label htmlFor="matricule">{t('users.matricule')}</Label>
             <Input
               id="matricule"
               value={formData.matricule}
@@ -103,7 +118,41 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSubmit, isLoading }
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="role">Rôle</Label>
+            <Label htmlFor="password">
+              {t('users.password')} {user && `(${t('common.new')})`}
+            </Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={t('users.passwordPlaceholder')}
+                required={!user}
+                minLength={6}
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                onClick={() => setShowPassword(!showPassword)}
+                title={showPassword ? t('users.hidePassword') : t('users.showPassword')}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4 text-muted-foreground" />
+                ) : (
+                  <Eye className="h-4 w-4 text-muted-foreground" />
+                )}
+              </Button>
+            </div>
+            {password && password.length < 6 && (
+              <p className="text-xs text-destructive">{t('users.passwordMinLength')}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="role">{t('users.role')}</Label>
             <Select
               value={formData.role}
               onValueChange={(value) => setFormData({ ...formData, role: value as User['role'] })}
@@ -112,30 +161,28 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSubmit, isLoading }
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="admin">Administrateur</SelectItem>
-                <SelectItem value="manager">Manager</SelectItem>
-                <SelectItem value="supervisor">Superviseur</SelectItem>
-                <SelectItem value="driver">Chauffeur</SelectItem>
-                <SelectItem value="auditeur">Auditeur</SelectItem>
+                <SelectItem value="admin">{t('users.roles.admin')}</SelectItem>
+                <SelectItem value="manager">{t('users.roles.manager')}</SelectItem>
+                <SelectItem value="supervisor">{t('users.roles.supervisor')}</SelectItem>
+                <SelectItem value="driver">{t('users.roles.driver')}</SelectItem>
+                <SelectItem value="auditeur">{t('users.roles.auditor')}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          {(formData.role === 'driver') && (
+          {(formData.role === 'manager' || formData.role === 'supervisor' || formData.role === 'driver') && (
             <div className="space-y-2">
-              <Label htmlFor="site">Site (optionnel)</Label>
+              <Label htmlFor="site">{t('vehicles.site')} ({t('common.new')})</Label>
               <Select
-                value={formData.role || 's'}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, site_id: value === 'none' ? undefined : value })
-                }
+                value={formData.site_id || ''}
+                onValueChange={(value) => setFormData({ ...formData, site_id: value || undefined })}
               >
                 <SelectTrigger id="site">
-                  <SelectValue placeholder="Sélectionner un site" />
+                  <SelectValue placeholder={t('vehicles.site')} />
                 </SelectTrigger>
                 <SelectContent>
-                <SelectItem value="aucun">Aucun site</SelectItem>
-                  {mockSites.map((site) => (
+                  <SelectItem value="aucun">{t('common.none')}</SelectItem>
+                  {sites?.map((site) => (
                     <SelectItem key={site.id} value={site.id}>
                       {site.nom} - {site.ville}
                     </SelectItem>
@@ -147,10 +194,13 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSubmit, isLoading }
 
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Annuler
+              {t('common.cancel')}
             </Button>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? 'Enregistrement...' : user ? 'Modifier' : 'Créer'}
+            <Button 
+              type="submit" 
+              disabled={isLoading || (password && password.length < 6)}
+            >
+              {isLoading ? t('common.loading') : user ? t('common.edit') : t('common.add')}
             </Button>
           </div>
         </form>

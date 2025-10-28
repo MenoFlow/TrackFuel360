@@ -2,51 +2,66 @@ import { MainLayout } from '@/components/Layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Settings, Users, MapPin, Bell, Database } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { staggerContainer, staggerItem } from '@/lib/utils/motionVariants';
+import { MotionWrapper } from '@/components/Layout/MotionWrapper';
 
 const Parametres = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const sections = [
     {
-      title: 'Gestion des utilisateurs',
-      description: 'Créer et gérer les comptes utilisateurs et leurs rôles',
+      title: t('settings.userManagement'),
+      description: t('settings.userManagementDesc'),
       icon: Users,
       action: () => navigate('/parametres/utilisateurs'),
     },
     {
-      title: 'Sites et dépôts',
-      description: 'Configurer les sites, dépôts et stations autorisées',
+      title: t('settings.sitesAndDepots'),
+      description: t('settings.sitesAndDepotsDesc'),
       icon: MapPin,
-      action: () => navigate('/geofences'),
+      action: () => navigate('/parametres/sites'),
     },
     {
-      title: 'Notifications',
-      description: 'Paramétrer les alertes et les seuils de détection',
+      title: t('settings.notifications'),
+      description: t('settings.notificationsDesc'),
       icon: Bell,
+      action: () => navigate('/parametres/notifications'),
     },
     {
-      title: 'Import/Export',
-      description: 'Importer des données en lot (Excel) ou exporter la base',
+      title: t('settings.importExport'),
+      description: t('settings.importExportDesc'),
       icon: Database,
+      action: () => navigate('/parametres/export_import'),
     },
   ];
 
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className='flex flex-col items-center text-center sm:items-start sm:text-start'>
-          <h1 className="text-3xl font-bold text-foreground">Paramètres</h1>
-          <p className="text-muted-foreground mt-2">
-            Configuration et administration de l'application
-          </p>
-        </div>
+        <MotionWrapper variant="slideUp">
+          <div className="text-center sm:text-left">
+            <h1 className="text-3xl font-bold text-foreground">{t('settings.title')}</h1>
+            <p className="text-muted-foreground mt-2">
+              {t('settings.description')}
+            </p>
+          </div>
+        </MotionWrapper>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <motion.div 
+          className="grid gap-4 md:grid-cols-2"
+          variants={staggerContainer}
+          initial="initial"
+          animate="animate"
+        >
           {sections.map((section, index) => {
             const Icon = section.icon;
             return (
-              <Card key={index}>
+              <motion.div key={index} variants={staggerItem}>
+                <Card className="h-full">
                 <CardHeader>
                   <div className="flex items-start gap-3">
                     <div className="p-2 bg-primary/10 rounded-lg">
@@ -67,13 +82,14 @@ const Parametres = () => {
                     onClick={section.action}
                     disabled={!section.action}
                   >
-                    Configurer
+                    {t('common.configure')}
                   </Button>
                 </CardContent>
               </Card>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
       </div>
     </MainLayout>
   );

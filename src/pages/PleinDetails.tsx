@@ -3,6 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { usePleins } from '@/hooks/usePleins';
 import { useVehicules } from '@/hooks/useVehicules';
 import { useUsers } from '@/hooks/useUsers';
+import { usePleinMetadata } from '@/hooks/usePleinMetadata';
+import { useGeofences } from '@/hooks/useGeofences';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,8 +12,6 @@ import { Separator } from '@/components/ui/separator';
 import { ArrowLeft, Download, MapPin, Clock, Camera, AlertTriangle, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { mockPleinExifMetadata } from '@/lib/data/mockData.fuel';
-import { mockGeofences } from '@/lib/data/mockData.geofences';
 import { isPointInGeofence } from '@/lib/utils/geolocation';
 
 const PleinDetails = () => {
@@ -20,11 +20,15 @@ const PleinDetails = () => {
   const { data: pleins } = usePleins();
   const { data: vehicules } = useVehicules();
   const { data: users } = useUsers();
+  const { data: exifMetadata } = usePleinMetadata(id);
+  const { data: geofences } = useGeofences();
 
   const plein = pleins?.find(p => p.id === id);
-  const exifMetadata = mockPleinExifMetadata.find(e => e.plein_id === id);
-  const vehicule = vehicules?.find(v => v.id === plein?.vehicule_id);
+  const vehicule = vehicules?.find(v => v.immatriculation === plein?.vehicule_id);
   const chauffeur = users?.find(u => u.id === plein?.chauffeur_id);
+  
+  // Vérifier que exifMetadata est un objet unique et non un tableau
+  const metadata = Array.isArray(exifMetadata) ? null : exifMetadata;
 
   if (!plein) {
     return (
@@ -45,24 +49,24 @@ const PleinDetails = () => {
   }
 
   // Calcul des écarts et anomalies
-  const dateEcart = exifMetadata 
-    ? Math.abs(new Date(plein.date).getTime() - new Date(`${exifMetadata.date}T${exifMetadata.heure}Z`).getTime()) / (1000 * 60 * 60)
+  const dateEcart = metadata 
+    ? Math.abs(new Date(plein.date).getTime() - new Date(`${metadata.date}T${metadata.heure}Z`).getTime()) / (1000 * 60 * 60)
     : 0;
 
-  const gpsEcart = exifMetadata && plein.latitude && plein.longitude
+  const gpsEcart = metadata && plein.latitude && plein.longitude
     ? Math.sqrt(
-        Math.pow((exifMetadata.latitude - plein.latitude) * 111, 2) +
-        Math.pow((exifMetadata.longitude - plein.longitude) * 111 * Math.cos(plein.latitude * Math.PI / 180), 2)
+        Math.pow((metadata.latitude - plein.latitude) * 111, 2) +
+        Math.pow((metadata.longitude - plein.longitude) * 111 * Math.cos(plein.latitude * Math.PI / 180), 2)
       )
     : 0;
 
-  const stations = mockGeofences.filter(g => g.type === 'station');
+  const stations = geofences?.filter(g => g.type === 'station') || [];
   const pleinDansStation = plein.latitude && plein.longitude 
     ? stations.some(s => isPointInGeofence(plein.latitude!, plein.longitude!, s.lat, s.lon, s.rayon_metres))
     : false;
 
-  const exifDansStation = exifMetadata 
-    ? stations.some(s => isPointInGeofence(exifMetadata.latitude, exifMetadata.longitude, s.lat, s.lon, s.rayon_metres))
+  const exifDansStation = metadata 
+    ? stations.some(s => isPointInGeofence(metadata.latitude, metadata.longitude, s.lat, s.lon, s.rayon_metres))
     : false;
 
   const hasAnomalies = dateEcart > 2 || gpsEcart > 0.5 || !pleinDansStation || !exifDansStation;
@@ -79,19 +83,19 @@ const PleinDetails = () => {
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate(-1)}>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-3">
+          <Button variant="ghost" onClick={() => navigate(-1)} className="w-full sm:w-auto">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Retour
           </Button>
           
           {hasAnomalies ? (
-            <Badge variant="destructive" className="text-base px-4 py-2">
+            <Badge variant="destructive" className="text-base px-4 py-2 w-full sm:w-auto justify-center">
               <AlertTriangle className="h-4 w-4 mr-2" />
               Plein suspect
             </Badge>
           ) : (
-            <Badge variant="secondary" className="text-base px-4 py-2">
+            <Badge variant="secondary" className="text-base px-4 py-2 w-full sm:w-auto justify-center">
               <CheckCircle className="h-4 w-4 mr-2" />
               Plein validé
             </Badge>
@@ -191,12 +195,12 @@ const PleinDetails = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {exifMetadata ? (
+              {metadata ? (
                 <>
                   <div>
                     <p className="text-sm text-muted-foreground">Date & Heure (photo)</p>
                     <p className="font-semibold">
-                      {format(new Date(`${exifMetadata.date}T${exifMetadata.heure}Z`), 'dd MMM yyyy HH:mm', { locale: fr })}
+                      {format(new Date(`${metadata.date}T${metadata.heure}Z`), 'dd MMM yyyy HH:mm', { locale: fr })}
                     </p>
                     {dateEcart > 0 && (
                       <div className="mt-2">
@@ -219,7 +223,7 @@ const PleinDetails = () => {
 
                   <div>
                     <p className="text-sm text-muted-foreground">Modèle téléphone</p>
-                    <p className="font-semibold">{exifMetadata.modele_telephone}</p>
+                    <p className="font-semibold">{metadata.modele_telephone}</p>
                   </div>
 
                   <Separator />
@@ -230,7 +234,7 @@ const PleinDetails = () => {
                       Position GPS (photo)
                     </p>
                     <p className="font-mono text-sm">
-                      {exifMetadata.latitude.toFixed(6)}, {exifMetadata.longitude.toFixed(6)}
+                      {metadata.latitude.toFixed(6)}, {metadata.longitude.toFixed(6)}
                     </p>
                     {exifDansStation ? (
                       <Badge variant="secondary" className="mt-2">
@@ -331,13 +335,13 @@ const PleinDetails = () => {
                     <span>Position saisie hors des stations autorisées</span>
                   </li>
                 )}
-                {!exifDansStation && exifMetadata && (
+                {!exifDansStation && metadata && (
                   <li className="flex items-start gap-2">
                     <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
                     <span>Position EXIF de la photo hors des stations autorisées</span>
                   </li>
                 )}
-                {!exifMetadata && (
+                {!metadata && (
                   <li className="flex items-start gap-2">
                     <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
                     <span>Aucune métadonnée EXIF disponible (photo potentiellement modifiée)</span>

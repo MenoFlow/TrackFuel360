@@ -3,25 +3,33 @@ import { useNavigate } from 'react-router-dom';
 import { useChauffeurAccess } from '@/hooks/useChauffeurAccess';
 import { usePleins } from '@/hooks/usePleins';
 import { useTrajets } from '@/hooks/useTrajets';
+import { useCreateCorrection } from '@/hooks/useCorrections';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, LogOut } from 'lucide-react';
+import { OfflineSyncIndicator } from '@/components/Chauffeur/OfflineSyncIndicator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import Header from './Header';
 
 export default function DemandeCorrectionForm() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentUser, logout, filterDataForDriver } = useChauffeurAccess();
   const { data: allPleins } = usePleins();
   const { data: allTrajets } = useTrajets();
+  const createCorrection = useCreateCorrection();
+  const isOnline = useOnlineStatus();
 
   const [type, setType] = useState<'plein' | 'trajet'>('plein');
   const [itemId, setItemId] = useState('');
   const [justification, setJustification] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!currentUser) return null;
 
@@ -30,84 +38,82 @@ export default function DemandeCorrectionForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
-    // Simulation de l'envoi
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      await createCorrection.mutateAsync({
+        table: type === 'plein' ? 'pleins' : 'trajets',
+        record_id: itemId,
+        champ: 'correction_demandee',
+        old_value: justification,
+        new_value: justification,
+        status: 'pending',
+        comment: justification,
+        requested_by: currentUser?.id || '',
+      });
 
-    toast({
-      title: 'Demande envoyée',
-      description: 'Votre demande de correction a été envoyée avec succès.',
-    });
+      toast({
+        title: isOnline ? t('driver.requestSent') : t('offline.status.savedLocally'),
+        description: isOnline ? t('driver.requestSentDesc') : t('offline.willSyncLater'),
+      });
 
-    setIsSubmitting(false);
-    navigate('/chauffeur');
+      navigate('/chauffeur');
+    } catch (error) {
+      toast({
+        title: t('errors.generic'),
+        description: String(error),
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/chauffeur')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">TrackFuel360</h1>
-              <p className="text-xs text-muted-foreground">Demande de correction</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-medium text-foreground">{currentUser.prenom} {currentUser.nom}</p>
-              <p className="text-xs text-muted-foreground">{currentUser.matricule}</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={logout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Déconnexion
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Header currentUser={currentUser} logout={logout} isDashboard={false} />
 
-      <div className="container mx-auto p-6 max-w-2xl">
+      <div className="mx-12 px-6 py-8">
         <Card>
           <CardHeader>
-            <CardTitle>Demande de correction</CardTitle>
+            <CardTitle>{t('driver.correctionRequestTitle')}</CardTitle>
             <CardDescription>
-              Demandez la correction d'un trajet ou d'un plein de carburant
+              {t('driver.correctionRequestDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {!isOnline && (
+              <Alert className="mb-4">
+                <AlertDescription>
+                  {t('offline.workingOffline')}
+                </AlertDescription>
+              </Alert>
+            )}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="type">Type de correction</Label>
+                <Label htmlFor="type">{t('driver.correctionType')}</Label>
                 <Select value={type} onValueChange={(v) => setType(v as 'plein' | 'trajet')}>
                   <SelectTrigger id="type">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="plein">Plein de carburant</SelectItem>
-                    <SelectItem value="trajet">Trajet</SelectItem>
+                    <SelectItem value="plein">{t('driver.fuelCorrection')}</SelectItem>
+                    <SelectItem value="trajet">{t('driver.tripCorrection')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="itemId">
-                  {type === 'plein' ? 'Sélectionner le plein' : 'Sélectionner le trajet'}
+                  {type === 'plein' ? t('driver.selectFuel') : t('driver.selectTrip')}
                 </Label>
                 <Select value={itemId} onValueChange={setItemId} required>
                   <SelectTrigger id="itemId">
-                    <SelectValue placeholder="Choisir..." />
+                    <SelectValue placeholder={t('driver.choose')} />
                   </SelectTrigger>
                   <SelectContent>
                     {type === 'plein' ? (
                       mesPleins.map((plein) => (
                         <SelectItem key={plein.id} value={plein.id}>
-                          {new Date(plein.date).toLocaleDateString('fr-FR')} - {plein.litres}L - {plein.station || 'Station inconnue'}
+                          {new Date(plein.date).toLocaleDateString('fr-FR')} - {plein.litres}L - {plein.station || t('driver.unknownStation')}
                         </SelectItem>
                       ))
                     ) : (
@@ -122,10 +128,10 @@ export default function DemandeCorrectionForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="justification">Justification de la correction</Label>
+                <Label htmlFor="justification">{t('driver.correctionJustification')}</Label>
                 <Textarea
                   id="justification"
-                  placeholder="Expliquez pourquoi cette correction est nécessaire..."
+                  placeholder={t('driver.correctionJustificationPlaceholder')}
                   value={justification}
                   onChange={(e) => setJustification(e.target.value)}
                   rows={6}
@@ -135,10 +141,10 @@ export default function DemandeCorrectionForm() {
 
               <div className="flex gap-3">
                 <Button type="button" variant="outline" onClick={() => navigate('/chauffeur')} className="flex-1">
-                  Annuler
+                  {t('common.cancel')}
                 </Button>
-                <Button type="submit" disabled={isSubmitting} className="flex-1">
-                  {isSubmitting ? 'Envoi...' : 'Envoyer la demande'}
+                <Button type="submit" disabled={createCorrection.isPending} className="flex-1">
+                  {createCorrection.isPending ? t('driver.sending') : t('driver.sendRequest')}
                 </Button>
               </div>
             </form>

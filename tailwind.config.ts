@@ -19,17 +19,16 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
-      
         primary: {
           DEFAULT: "hsl(var(--primary))",
-          foreground: "hsl(var(--primary-foreground1))",
+          foreground: "hsl(var(--primary-foreground))",
         },
         primary1: {
           DEFAULT: "hsl(var(--primary1))",
           foreground: "hsl(var(--primary-foreground1))",
           glow: "hsl(var(--primary-glow1))",
         },
-      
+
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
@@ -39,7 +38,6 @@ export default {
           foreground: "hsl(var(--secondary-foreground1))",
           glow: "hsl(var(--secondary-glow1))",
         },
-      
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
           foreground: "hsl(var(--destructive-foreground))",
@@ -49,23 +47,14 @@ export default {
           foreground: "hsl(var(--destructive-foreground1))",
           glow: "hsl(var(--destructive-glow1))",
         },
-      
         muted: {
-          DEFAULT: "hsl(var(--muted1))",
-          foreground: "hsl(var(--muted-foreground1))",
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
         },
-        "muted-foreground1": "hsl(var(--muted-foreground1))",
-      
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
         },
-        accent1: {
-          DEFAULT: "hsl(var(--accent1))",
-          foreground: "hsl(var(--accent-foreground1))",
-          glow: "hsl(var(--accent-glow1))",
-        },
-      
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
@@ -85,7 +74,6 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
-      
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

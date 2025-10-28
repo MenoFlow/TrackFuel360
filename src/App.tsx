@@ -1,130 +1,159 @@
+// App.tsx
+import { useEffect, useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  createBrowserRouter,
-  RouterProvider,
-  Navigate,
-} from "react-router-dom";
-import "./index.css";
+import { createBrowserRouter, RouterProvider, Navigate } from "react-router-dom";
+import { MotionLayout } from "./components/Layout/MotionLayout";
 
 // Pages
 import Index from "./pages/Index";
 import Vehicules from "./pages/Vehicules";
 import VehicleDetail from "./components/vehicle-detail";
 import Pleins from "./pages/Pleins";
+import PleinDetails from "./pages/PleinDetails";
 import Alertes from "./pages/Alertes";
 import Rapports from "./pages/Rapports";
+import RapportExport from "./pages/RapportExport";
+import Parametres from "./pages/Parametres";
 import GestionUtilisateurs from "./pages/GestionUtilisateurs";
 import GestionCorrections from "./pages/GestionCorrections";
+import GestionSites from "./pages/GestionSites";
 import Login from "./pages/Login";
 import DashboardChauffeur from "./pages/DashboardChauffeur";
 import DemandeCorrectionForm from "./components/Chauffeur/DemandeCorrectionForm";
 import AjoutPleinForm from "./components/Chauffeur/AjoutPleinForm";
-import Parametres from "./pages/Parametres";
-import PleinDetails from "./pages/PleinDetails";
+import ComparaisonFlotte from "./pages/ComparaisonFlotte";
 import NotFound from "./pages/NotFound";
-import RapportExport from "./pages/RapportExport";
-import ManualTripEntryMap from "./pages/ManualTripEntryMap ";
+import { MainLayout } from "./components/Layout/MainLayout";
+import { ExportSection } from "./components/Exportation/ExportSection";
+import { ImportSection } from "./components/Importation/ImportSection";
+import NotificationParameters from "./pages/NotificationParameters";
+import { LanguageProvider } from "./contexts/LanguageContext";
 import MapView from "./pages/MapView";
+import ManualTripEntryMap from "./components/Trip/ManualTripEntryMap";
+import Affectations from "./pages/Affectations";
 
+// React Query
 const queryClient = new QueryClient();
 
-// Route protection wrapper
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const currentUser = localStorage.getItem("currentUser");
-  if (!currentUser) {
+// Route protection wrapper with role-based access
+const ProtectedRoute = ({
+  children,
+  allowedRoles,
+}: {
+  children: React.ReactNode;
+  allowedRoles?: string[];
+}) => {
+  const currentUserStr = localStorage.getItem("currentUser");
+
+  if (!currentUserStr) {
     return <Navigate to="/login" replace />;
   }
-  return <>{children}</>;
+
+  try {
+    const currentUser = JSON.parse(currentUserStr);
+
+    if (allowedRoles && !allowedRoles.includes(currentUser.role)) {
+      if (currentUser.role === "driver") {
+        return <Navigate to="/chauffeur" replace />;
+      }
+      return <Navigate to="/" replace />;
+    }
+
+    return <>{children}</>;
+  } catch (error) {
+    console.error("Error parsing user:", error);
+    return <Navigate to="/login" replace />;
+  }
 };
 
-// Define routes using createBrowserRouter
+// Helper to wrap pages with MotionLayout + ProtectedRoute if needed
+const withMotion = (
+  Component: React.ReactNode,
+  variant: "fade" | "slideUp" = "slideUp",
+  protect = true,
+  allowedRoles?: string[]
+) =>
+  protect ? (
+    <ProtectedRoute allowedRoles={allowedRoles}>
+      <MotionLayout variant={variant}>{Component}</MotionLayout>
+    </ProtectedRoute>
+  ) : (
+    <MotionLayout variant={variant}>{Component}</MotionLayout>
+  );
+
+// Router definition
 const router = createBrowserRouter(
   [
-    { path: "/login", element: <Login /> },
-    { path: "/rapports/export/:token", element: <RapportExport /> },
+    // Public routes
+    { path: "/login", element: withMotion(<Login />, "fade", false) },
+    { path: "/rapports/export/:token", element: withMotion(<RapportExport />, "slideUp", false) },
 
+    // Admin/Manager routes
+    { path: "/", element: withMotion(<Index />, "slideUp", true, ["admin", "manager", "supervisor", "auditor"]) },
+    { path: "/vehicules", element: withMotion(<Vehicules />, "slideUp", true, ["admin", "manager", "supervisor"]) },
+    { path: "/vehicle/:id", element: withMotion(<VehicleDetail />, "slideUp", true, ["admin", "manager", "supervisor"]) },
+    { path: "/trips/:vehiculeId", element: withMotion(<ManualTripEntryMap />, "slideUp", true, ["admin", "manager", "supervisor"]) },
+    { path: "/pleins", element: withMotion(<Pleins />, "slideUp", true, ["admin", "manager", "supervisor"]) },
+    { path: "/pleins/:id", element: withMotion(<PleinDetails />, "slideUp", true, ["admin", "manager", "supervisor"]) },
+    { path: "/alertes", element: withMotion(<Alertes />, "slideUp", true, ["admin", "manager", "supervisor"]) },
+    { path: "/affectations", element: withMotion(<Affectations />, "slideUp", true, ["admin", "manager", "supervisor"]) },
+    { path: "/rapports", element: withMotion(<Rapports />, "slideUp", true, ["admin", "manager", "supervisor", "auditor"]) },
+    { path: "/parametres", element: withMotion(<Parametres />, "slideUp", true, ["admin", "manager"]) },
+    { path: "/parametres/utilisateurs", element: withMotion(<GestionUtilisateurs />, "slideUp", true, ["admin", "manager"]) },
+    { path: "/parametres/sites", element: withMotion(<GestionSites />, "slideUp", true, ["admin", "manager"]) },
+    { path: "/parametres/corrections", element: withMotion(<GestionCorrections />, "slideUp", true, ["admin", "manager", "supervisor"]) },
     {
-      path: "/",
-      element: <ProtectedRoute><Index /></ProtectedRoute>,
+      path: "/parametres/export_import",
+      element: (
+        <ProtectedRoute allowedRoles={["admin", "manager"]}>
+          <MainLayout>
+            <div className="space-y-6">
+              <MotionLayout variant="slideUp">
+                <ExportSection />
+              </MotionLayout>
+              <MotionLayout variant="slideUp">
+                <ImportSection />
+              </MotionLayout>
+            </div>
+          </MainLayout>
+        </ProtectedRoute>
+      ),
     },
-    {
-      path: "/vehicules",
-      element: <ProtectedRoute><Vehicules /></ProtectedRoute>,
-    },
-    {
-      path: "/vehicle/:id",
-      element: <ProtectedRoute><VehicleDetail /></ProtectedRoute>,
-    },
-    {
-      path: "/pleins",
-      element: <ProtectedRoute><Pleins /></ProtectedRoute>,
-    },
-    {
-      path: "/pleins/:id",
-      element: <ProtectedRoute><PleinDetails /></ProtectedRoute>,
-    },
-    {
-      path: "/alertes",
-      element: <ProtectedRoute><Alertes /></ProtectedRoute>,
-    },
-    {
-      path: "/rapports",
-      element: <ProtectedRoute><Rapports /></ProtectedRoute>,
-    },
-    {
-      path: "/parametres",
-      element: <ProtectedRoute><Parametres /></ProtectedRoute>,
-    },
-    {
-      path: "/parametres/utilisateurs",
-      element: <ProtectedRoute><GestionUtilisateurs /></ProtectedRoute>,
-    },
-    {
-      path: "/parametres/corrections",
-      element: <ProtectedRoute><GestionCorrections /></ProtectedRoute>,
-    },
-    {
-      path: "/chauffeur",
-      element: <ProtectedRoute><DashboardChauffeur /></ProtectedRoute>,
-    },
-    {
-      path: "/geofences",
-      element: <ProtectedRoute><MapView /></ProtectedRoute>,
-    },
-    {
-      path: "/chauffeur/demande-correction",
-      element: <ProtectedRoute><DemandeCorrectionForm /></ProtectedRoute>,
-    },
-    {
-      path: "/chauffeur/ajouter-plein",
-      element: <ProtectedRoute><AjoutPleinForm /></ProtectedRoute>,
-    },
-    {
-      path: "/addTrips",
-      element: <ProtectedRoute><ManualTripEntryMap /></ProtectedRoute>,
-    },
-    {
-      path: "*",
-      element: <NotFound />,
-    },
+    { path: "/parametres/notifications", element: withMotion(<NotificationParameters />, "slideUp", true, ["admin", "manager"]) },
+
+    // Chauffeur routes
+    { path: "/chauffeur", element: withMotion(<DashboardChauffeur />, "slideUp", true, ["driver"]) },
+    { path: "/chauffeur/demande-correction", element: withMotion(<DemandeCorrectionForm />, "slideUp", true, ["driver"]) },
+    { path: "/chauffeur/ajouter-plein", element: withMotion(<AjoutPleinForm />, "slideUp", true, ["driver"]) },
+
+    // Map / Comparison
+    { path: "/geofence", element: withMotion(<MapView />) },
+    { path: "/comparaison-flotte", element: withMotion(<ComparaisonFlotte />) },
+
+    // Catch-all
+    { path: "*", element: withMotion(<NotFound />, "fade", false) },
   ],
   {
     future: {
       v7_startTransition: true,
+      v7_relativeSplatPath: true,
     },
   }
 );
 
+// Main App
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <RouterProvider router={router} />
-    </TooltipProvider>
+    <LanguageProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <RouterProvider router={router} />
+      </TooltipProvider>
+    </LanguageProvider>
   </QueryClientProvider>
 );
 

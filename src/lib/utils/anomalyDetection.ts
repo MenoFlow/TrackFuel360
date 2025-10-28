@@ -1,5 +1,5 @@
 // Système de détection d'anomalies et génération d'alertes
-import { Vehicule, Plein, Trajet, Geofence, Alerte, AlerteType, PleinExifMetadata } from '@/types';
+import { Vehicule, Plein, Trajet, NiveauCarburant, Geofence, Alerte, AlerteType, PleinExifMetadata } from '@/types';
 import { haversineDistance, isPointInGeofence } from './geolocation';
 
 /**
@@ -35,7 +35,7 @@ export function detectPleinHorsZone(
     
     return {
       id: `alert_hz_${plein.id}`,
-      vehicule_id: vehicule.id,
+      vehicule_id: vehicule.immatriculation,
       chauffeur_id: plein.chauffeur_id,
       type: 'plein_hors_zone',
       titre: 'Plein effectué hors zone autorisée',
@@ -64,8 +64,8 @@ export function detectSurconsommation(
     const deviationPercent = ((consommationMoyenne - vehicule.consommation_nominale) / vehicule.consommation_nominale) * 100;
     
     return {
-      id: `alert_conso_${vehicule.id}`,
-      vehicule_id: vehicule.id,
+      id: `alert_conso_${vehicule.immatriculation}`,
+      vehicule_id: vehicule.immatriculation,
       type: 'consommation_elevee',
       titre: 'Surconsommation détectée',
       description: `Consommation moyenne de ${consommationMoyenne.toFixed(1)} L/100km vs nominale ${vehicule.consommation_nominale} L/100km (+${deviationPercent.toFixed(0)}%)`,
@@ -74,39 +74,6 @@ export function detectSurconsommation(
       status: 'new',
       date_detection: new Date().toISOString(),
       deviation_percent: deviationPercent,
-    };
-  }
-  
-  return null;
-}
-
-/**
- * Détecte un écart entre distance GPS et distance odomètre
- */
-export function detectEcartDistanceGPS(
-  trajet: Trajet,
-  seuilPourcentage: number = 20
-): Alerte | null {
-  if (!trajet.odometre_debut || !trajet.odometre_fin) return null;
-  
-  const distanceOdometre = trajet.odometre_fin - trajet.odometre_debut;
-  const distanceGPS = trajet.distance_km;
-  
-  const ecartPourcent = Math.abs((distanceOdometre - distanceGPS) / distanceGPS) * 100;
-  
-  if (ecartPourcent > seuilPourcentage) {
-    return {
-      id: `alert_gps_${trajet.id}`,
-      vehicule_id: trajet.vehicule_id,
-      chauffeur_id: trajet.chauffeur_id,
-      type: 'distance_gps_ecart',
-      titre: 'Écart GPS vs odomètre',
-      description: `Distance GPS: ${distanceGPS}km vs odomètre: ${distanceOdometre}km (écart ${ecartPourcent > 0 ? '+' : ''}${ecartPourcent.toFixed(0)}%)`,
-      score: Math.min(95, 60 + ecartPourcent),
-      severity: ecartPourcent > 35 ? 'high' : ecartPourcent > 20 ? 'medium' : 'low',
-      status: 'new',
-      date_detection: new Date(trajet.date_fin).toISOString(),
-      deviation_percent: ecartPourcent,
     };
   }
   
@@ -217,8 +184,8 @@ export function detectImmobilisationAnormale(
   
   if (!dansDepot) {
     return {
-      id: `alert_immob_${vehicule.id}_${Date.now()}`,
-      vehicule_id: vehicule.id,
+      id: `alert_immob_${vehicule.immatriculation}_${Date.now()}`,
+      vehicule_id: vehicule.immatriculation,
       type: 'immobilisation_anormale',
       titre: 'Immobilisation prolongée hors dépôt',
       description: `Véhicule immobilisé ${dureeHeures.toFixed(1)}h en dehors d'un dépôt autorisé`,

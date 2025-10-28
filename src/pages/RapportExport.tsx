@@ -44,15 +44,26 @@ export default function RapportExport() {
   }, [token]);
 
   const { data: rapport, isLoading } = useRapport(rapportId);
+  const [pdfUrl, setPdfUrl] = useState<string>('');
+
+  // Générer le PDF et l'afficher
+  // useEffect(() => {
+  //   if (rapport) {
+      // Générer le blob PDF directement
+      // const blob = exporterRapport(rapport, format);
+      // if (blob) {
+      //   const url = URL.createObjectURL(blob);
+      //   setPdfUrl(url);
+        
+      //   // Nettoyer l'URL quand le composant est démonté
+      //   return () => URL.revokeObjectURL(url);
+      // }
+  //   }
+  // }, [rapport, format]);
 
   const handleDownload = () => {
     if (rapport) {
-      const rapportData = {
-        metadata: rapport,
-        donnees: [], // Les données seraient chargées ici
-        statistiques: {},
-      };
-      exporterRapport(rapportData, format);
+      exporterRapport(rapport, format);
     }
   };
 
@@ -134,20 +145,20 @@ export default function RapportExport() {
           </div>
           <CardTitle className="text-center">Téléchargement de rapport</CardTitle>
           <CardDescription className="text-center">
-            {rapport.titre}
+            {rapport.metadata.titre}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <p className="text-sm text-muted-foreground">
-              <strong>Type:</strong> {rapport.type}
+              <strong>Type:</strong> {rapport.metadata.type}
             </p>
             <p className="text-sm text-muted-foreground">
               <strong>Format:</strong> {format.toUpperCase()}
             </p>
             <p className="text-sm text-muted-foreground">
               <strong>Généré le:</strong>{' '}
-              {new Date(rapport.date_generation).toLocaleDateString('fr-FR', {
+              {new Date(rapport.metadata.date_generation).toLocaleDateString('fr-FR', {
                 day: 'numeric',
                 month: 'long',
                 year: 'numeric',
@@ -156,7 +167,7 @@ export default function RapportExport() {
               })}
             </p>
             <p className="text-sm text-muted-foreground">
-              <strong>Par:</strong> {rapport.utilisateur_nom}
+              <strong>Par:</strong> {rapport.metadata.utilisateur_nom}
             </p>
           </div>
 
@@ -166,6 +177,17 @@ export default function RapportExport() {
               Lien expire dans {hoursLeft}h {minutesLeft}min
             </p>
           </div>
+
+          {/* Afficher le PDF si disponible */}
+          {format === 'pdf' && pdfUrl && (
+            <div className="border rounded-lg overflow-hidden" style={{ height: '600px' }}>
+              <iframe
+                src={pdfUrl}
+                className="w-full h-full"
+                title="Aperçu du rapport PDF"
+              />
+            </div>
+          )}
 
           <Button onClick={handleDownload} className="w-full">
             <FileDown className="h-4 w-4 mr-2" />

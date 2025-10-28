@@ -46,10 +46,9 @@ export const useChauffeurAccess = () => {
   
     return today >= debut && today <= fin;
   };
-  
 
   // Filtre les véhicules assignés au chauffeur
-  const filterVehiculesForDriver = <T extends { id: string }>(
+  const filterVehiculesForDriver = <T extends { immatriculation: string }>(
     vehicules: T[],
     affectations: Array<{ vehicule_id: string; chauffeur_id: string; date_debut: string; date_fin: string }>
   ): T[] => {
@@ -61,7 +60,7 @@ export const useChauffeurAccess = () => {
       isTodayBetween(a.date_debut, a.date_fin)
     )
     .map(a => a.vehicule_id);
-    return vehicules.filter(v => assignedVehicleIds.includes(v.id));
+    return vehicules.filter(v => assignedVehicleIds.includes(v.immatriculation));
   };
 
   return {

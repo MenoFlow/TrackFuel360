@@ -8,19 +8,24 @@ export default defineConfig(({ mode }) => ({
     host: true,
     port: 8080,
     allowedHosts: true,
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        secure: false
+      }
+    },
   },
+
   plugins: [react(),
     VitePWA({
-      workbox: {
-        maximumFileSizeToCacheInBytes: 3000000 // 3 Mo par exemple
-      },
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'favicon.ico', 'robots.txt'],
       manifest: {
-        name: 'My PWA App',
-        short_name: 'PWAApp',
-        description: 'Une application React installable',
-        theme_color: '#ffffff',
+        name: 'TrackFuel',
+        short_name: 'TrackFuel',
+        description: 'Application de suivi de carburant pour véhicules',
+        theme_color: '#0f172a',
         background_color: '#ffffff',
         display: 'standalone',
         start_url: '/',
@@ -32,15 +37,66 @@ export default defineConfig(({ mode }) => ({
             purpose: 'any maskable'
           }
         ]
+      },
+      workbox: {
+        maximumFileSizeToCacheInBytes: 3000000,
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/your-api-domain\.com\/.*$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'api-cache',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 86400
+              }
+            }
+          }
+        ]
       }
-    }),
+    })
+    
   ].filter(Boolean),
     build: {
       chunkSizeWarningLimit: 2500,
       rollupOptions: {
         output: {
           manualChunks: {
-            vendor: ['react', 'react-dom']
+            react: ['react', 'react-dom'],
+            leaflet: ['leaflet', 'leaflet-draw', 'react-leaflet', 'react-leaflet-draw'],
+            i18n: ['i18next', 'react-i18next'],
+            ui: [
+              'framer-motion',
+              'lucide-react',
+              '@radix-ui/react-accordion',
+              '@radix-ui/react-alert-dialog',
+              '@radix-ui/react-aspect-ratio',
+              '@radix-ui/react-avatar',
+              '@radix-ui/react-checkbox',
+              '@radix-ui/react-collapsible',
+              '@radix-ui/react-context-menu',
+              '@radix-ui/react-dialog',
+              '@radix-ui/react-dropdown-menu',
+              '@radix-ui/react-hover-card',
+              '@radix-ui/react-label',
+              '@radix-ui/react-menubar',
+              '@radix-ui/react-navigation-menu',
+              '@radix-ui/react-popover',
+              '@radix-ui/react-progress',
+              '@radix-ui/react-radio-group',
+              '@radix-ui/react-scroll-area',
+              '@radix-ui/react-select',
+              '@radix-ui/react-separator',
+              '@radix-ui/react-slider',
+              '@radix-ui/react-slot',
+              '@radix-ui/react-switch',
+              '@radix-ui/react-tabs',
+              '@radix-ui/react-toast',
+              '@radix-ui/react-toggle',
+              '@radix-ui/react-toggle-group',
+              '@radix-ui/react-tooltip'
+            ],
+            utils: ['html2canvas', 'jspdf', 'xlsx']
           }
         }
       }

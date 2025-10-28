@@ -134,8 +134,8 @@ export const FleetMap: React.FC<FleetMapProps> = ({ vehicles, onVehicleSelect })
     })),
     [vehicles]
   );
+  const MAP_CENTER: LatLngExpression = [-18.8792, 47.5079];
 
-  const mapCenter: LatLngExpression = [-18.8792, 47.5079];
 
   const handleVehicleClick = (vehicle: VehicleWithPosition) => {
     setSelectedVehicle(vehicle);
@@ -164,9 +164,18 @@ export const FleetMap: React.FC<FleetMapProps> = ({ vehicles, onVehicleSelect })
   return (
     <Card className="rounded-2xl overflow-hidden border-0 shadow-lg">
       <CardContent className="p-0">
-        <div className="h-[500px] relative">
+        <div className="h-[600px] relative"
+            // style={{
+            // resize: 'both',
+            // overflow: 'auto',
+            // // width: '300px',
+            // height: '600px',
+            // border: '1px solid #ccc',
+            // padding: '10px'
+            // }}
+        >
           <MapContainer
-            center={mapCenter}
+            center={MAP_CENTER}
             zoom={6}
             scrollWheelZoom={true}
             style={{ height: '100%', width: '100%' }}
@@ -180,7 +189,7 @@ export const FleetMap: React.FC<FleetMapProps> = ({ vehicles, onVehicleSelect })
               const fuelStatus = getFuelStatus(vehicle);
               const remainingFuel = calculateFuelRemaining(vehicle);
               const autonomy = remainingFuel / vehicle.consommation_nominale * 100;
-              const tripsData = getTripsByVehicleId(vehicle.id);
+              const tripsData = getTripsByVehicleId(vehicle.immatriculation);
 
               // Sélection du dernier trajet
               const lastTrip = tripsData && tripsData.length > 0 ? tripsData[tripsData.length - 1] : null;
@@ -195,7 +204,7 @@ export const FleetMap: React.FC<FleetMapProps> = ({ vehicles, onVehicleSelect })
               if (lastPosition) {
                 return (
                   <Marker
-                    key={vehicle.id}
+                    key={vehicle.immatriculation}
                     position={
                       lastPosition ? [lastPosition.latitude, lastPosition.longitude] : [0, 0]
                     }

@@ -96,7 +96,7 @@ export function calculerStatistiquesConsommation(
     .filter(v => v.actif)
     .map(vehicule => {
       const consoMoyenne = calculerConsommationMoyenne(
-        vehicule.id,
+        vehicule.immatriculation,
         periodeJours,
         trajets,
         niveauxCarburant,
@@ -108,7 +108,7 @@ export function calculerStatistiquesConsommation(
         : 0;
       
       return {
-        vehicule_id: vehicule.id,
+        vehicule_id: vehicule.immatriculation,
         immatriculation: vehicule.immatriculation,
         consommation: Number(consoMoyenne.toFixed(1)),
         ecart_pourcentage

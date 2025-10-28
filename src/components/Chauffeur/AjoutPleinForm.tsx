@@ -2,20 +2,30 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useChauffeurAccess } from '@/hooks/useChauffeurAccess';
 import { useVehicules } from '@/hooks/useVehicules';
-import { mockAffectations } from '@/lib/mockData';
+import { useAffectations } from '@/hooks/useAffectations';
+import { useCreatePlein } from '@/hooks/usePleins';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, LogOut, Camera } from 'lucide-react';
+import { OfflineSyncIndicator } from '@/components/Chauffeur/OfflineSyncIndicator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
+import Header from './Header';
 
 export default function AjoutPleinForm() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { currentUser, logout, filterVehiculesForDriver } = useChauffeurAccess();
   const { data: allVehicules } = useVehicules();
+  const { data: affectations } = useAffectations();
+  const createPlein = useCreatePlein();
+  const isOnline = useOnlineStatus();
 
   const [vehiculeId, setVehiculeId] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -24,11 +34,12 @@ export default function AjoutPleinForm() {
   const [odometre, setOdometre] = useState('');
   const [station, setStation] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!currentUser) return null;
 
-  const mesVehicules = allVehicules ? filterVehiculesForDriver(allVehicules, mockAffectations) : [];
+  const mesVehicules = allVehicules && affectations 
+    ? filterVehiculesForDriver(allVehicules, affectations) 
+    : [];
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -38,63 +49,62 @@ export default function AjoutPleinForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
-    // Simulation de l'envoi
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      await createPlein.mutateAsync({
+        vehicule_id: vehiculeId,
+        chauffeur_id: currentUser?.id || '',
+        date,
+        litres: parseFloat(litres),
+        prix_unitaire: parseFloat(prixUnitaire),
+        odometre: parseInt(odometre),
+        station,
+        photo_bon: photo ? URL.createObjectURL(photo) : undefined,
+        type_saisie: 'manuelle',
+      });
 
-    toast({
-      title: 'Plein enregistré',
-      description: 'Votre plein de carburant a été enregistré avec succès.',
-    });
+      toast({
+        title: isOnline ? t('driver.fuelRecorded') : t('offline.status.savedLocally'),
+        description: isOnline ? t('driver.fuelRecordedDesc') : t('offline.willSyncLater'),
+      });
 
-    setIsSubmitting(false);
-    navigate('/chauffeur');
+      navigate('/chauffeur');
+    } catch (error) {
+      toast({
+        title: t('errors.generic'),
+        description: String(error),
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b border-border bg-card sticky top-0 z-10">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => navigate('/chauffeur')}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Retour
-            </Button>
-            <div>
-              <h1 className="text-xl font-bold text-foreground">TrackFuel360</h1>
-              <p className="text-xs text-muted-foreground">Ajouter un plein</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="text-right">
-              <p className="text-sm font-medium text-foreground">{currentUser.prenom} {currentUser.nom}</p>
-              <p className="text-xs text-muted-foreground">{currentUser.matricule}</p>
-            </div>
-            <Button variant="outline" size="sm" onClick={logout}>
-              <LogOut className="h-4 w-4 mr-2" />
-              Déconnexion
-            </Button>
-          </div>
-        </div>
-      </header>
+      <Header currentUser={currentUser} logout={logout} isDashboard={false} />
 
-      <div className="container mx-auto p-6 max-w-2xl">
+      <div className="mx-12 px-6 py-8">
         <Card>
           <CardHeader>
-            <CardTitle>Nouveau plein de carburant</CardTitle>
+            <CardTitle>{t('driver.newFuelTitle')}</CardTitle>
             <CardDescription>
-              Enregistrez un nouveau plein avec photo du bon
+              {t('driver.newFuelDesc')}
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {!isOnline && (
+              <Alert className="mb-4">
+                <AlertDescription>
+                  {t('offline.workingOffline')}
+                </AlertDescription>
+              </Alert>
+            )}
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="vehiculeId">Véhicule</Label>
+                <Label htmlFor="vehiculeId">{t('reports.vehicle')}</Label>
                 <Select value={vehiculeId} onValueChange={setVehiculeId} required>
                   <SelectTrigger id="vehiculeId">
-                    <SelectValue placeholder="Sélectionner un véhicule" />
+                    <SelectValue placeholder={t('driver.selectVehicle')} />
                   </SelectTrigger>
                   <SelectContent>
                     {mesVehicules.map((v) => (
@@ -108,7 +118,7 @@ export default function AjoutPleinForm() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="date">Date du plein</Label>
+                  <Label htmlFor="date">{t('driver.fuelDate')}</Label>
                   <Input
                     id="date"
                     type="date"
@@ -118,7 +128,7 @@ export default function AjoutPleinForm() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="odometre">Odomètre (km)</Label>
+                  <Label htmlFor="odometre">{t('fuel.odometer')} (km)</Label>
                   <Input
                     id="odometre"
                     type="number"
@@ -132,7 +142,7 @@ export default function AjoutPleinForm() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="litres">Litres</Label>
+                  <Label htmlFor="litres">{t('fuel.liters')}</Label>
                   <Input
                     id="litres"
                     type="number"
@@ -144,7 +154,7 @@ export default function AjoutPleinForm() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="prixUnitaire">Prix unitaire ($/L)</Label>
+                  <Label htmlFor="prixUnitaire">{t('fuel.pricePerLiter')}</Label>
                   <Input
                     id="prixUnitaire"
                     type="number"
@@ -158,7 +168,7 @@ export default function AjoutPleinForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="station">Station (optionnel)</Label>
+                <Label htmlFor="station">{t('fuel.station')}</Label>
                 <Input
                   id="station"
                   type="text"
@@ -169,7 +179,7 @@ export default function AjoutPleinForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="photo">Photo du bon de carburant</Label>
+                <Label htmlFor="photo">{t('driver.receiptPhoto')}</Label>
                 <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
                   <input
                     id="photo"
@@ -189,7 +199,7 @@ export default function AjoutPleinForm() {
                         className="mt-2"
                         onClick={() => document.getElementById('photo')?.click()}
                       >
-                        Changer la photo
+                        {t('driver.changePhoto')}
                       </Button>
                     </div>
                   ) : (
@@ -200,7 +210,7 @@ export default function AjoutPleinForm() {
                     >
                       <Camera className="h-8 w-8 text-muted-foreground" />
                       <span className="text-sm text-muted-foreground">
-                        Prendre une photo du bon
+                        {t('driver.takePhoto')}
                       </span>
                     </button>
                   )}
@@ -209,10 +219,10 @@ export default function AjoutPleinForm() {
 
               <div className="flex gap-3">
                 <Button type="button" variant="outline" onClick={() => navigate('/chauffeur')} className="flex-1">
-                  Annuler
+                  {t('common.cancel')}
                 </Button>
-                <Button type="submit" disabled={isSubmitting} className="flex-1">
-                  {isSubmitting ? 'Enregistrement...' : 'Enregistrer le plein'}
+                <Button type="submit" disabled={createPlein.isPending} className="flex-1">
+                  {createPlein.isPending ? t('driver.recording') : t('driver.recordFuel')}
                 </Button>
               </div>
             </form>

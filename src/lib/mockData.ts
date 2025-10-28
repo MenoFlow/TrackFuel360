@@ -1,10 +1,9 @@
-// Mock data pour le développement sans backend
-import { 
-  Vehicule, Trajet, Plein, TraceGPSPoint
-} from '@/types';
-
 // Point d'entrée principal pour toutes les données mock
 // Ce fichier agrège les données de différents modules
+import { 
+  Vehicule, Trajet, Plein, TraceGPSPoint,
+  RapportMetadata
+} from '@/types';
 
 // Import des données de base
 export { mockSites, mockUsers, mockVehicules, mockAffectations } from './data/mockData.base';
@@ -26,11 +25,12 @@ import { calculerDashboardStats } from './services/dashboardService';
 import { generateAlertes } from './services/alerteService';
 
 // Import des données pour les calculs
-import { mockVehicules } from './data/mockData.base';
+import { mockVehicules, mockSites, mockUsers, mockAffectations } from './data/mockData.base';
+
 import { mockTrajets, mockTraceGPSPoints } from './data/mockData.trajectories';
 import { mockPleins, mockNiveauxCarburant, mockPleinExifMetadata } from './data/mockData.fuel';
 import { mockGeofences } from './data/mockData.geofences';
-import { mockParametresDetection } from './data/mockData.corrections';
+import { mockCorrections, mockParametresDetection } from './data/mockData.corrections';
 
 // Générer les alertes dynamiquement
 export const mockAlertes = generateAlertes(
@@ -44,16 +44,8 @@ export const mockAlertes = generateAlertes(
   mockParametresDetection
 );
 
-// Calculer les stats du dashboard dynamiquement
-export const mockDashboardStats = calculerDashboardStats(
-  mockVehicules,
-  mockTrajets,
-  mockPleins,
-  mockNiveauxCarburant,
-  mockAlertes
-);
-
 // ---------------------------------- Not a mockData-----------------------------
+
 
 export function consolidateTripsWithTraceGps(
   // trajets: Trajet[],
@@ -71,8 +63,17 @@ export function consolidateTripsWithTraceGps(
   });
 }
 
+// Calculer les stats du dashboard dynamiquement
+export const mockDashboardStats = calculerDashboardStats(
+  mockVehicules,
+  mockTrajets,
+  mockPleins,
+  mockNiveauxCarburant,
+  mockAlertes
+);
+
 export const getVehiculeById = (id: string): Vehicule | undefined => {
-  return mockVehicules.find(v => v.id === id);
+  return mockVehicules.find(v => v.immatriculation === id);
 };
 
 export const getVehiculesBySite = (site: string): Vehicule[] => {
@@ -98,6 +99,103 @@ export const addTrip = (trip: Omit<Trajet, 'id'>): Trajet => {
   return newTrip;
 };
 
-// Pour les administrateurs, il faut mettre le bouton "Ajouter un trajet" dans "Gestion des véhicules" juste a cote du bouton "Voir details"
 
-// Pour les chauffeurs, mettre le bouton "Ajouter un trajet" a droite du bouton "Demande de correction"
+
+// Rapports
+export const mockRapportsMetadata: RapportMetadata[] = [
+  { id: "rapp-1", type: "mensuel_site", titre: "Rapport mensuel Paris Nord", description: "Consommation janvier 2025", date_generation: "2025-02-01T10:00:00Z", utilisateur_id: "user-2", utilisateur_nom: "Marie Martin", nb_lignes: 156, format: "pdf" },
+  { id: "rapp-2", type: "top_ecarts", titre: "Top 10 écarts janvier", description: "Véhicules avec plus grands écarts", date_generation: "2025-02-01T11:00:00Z", utilisateur_id: "user-2", utilisateur_nom: "Marie Martin", nb_lignes: 10, format: "excel" },
+];
+
+export const mockDataByType = {
+  Site: mockSites,
+  Geofence: mockGeofences,
+  User: mockUsers,
+  Vehicule: mockVehicules,
+  Affectation: mockAffectations,
+  Trajet: mockTrajets,
+  TraceGPSPoint: mockTraceGPSPoints,
+  Plein: mockPleins,
+  PleinExifMetadata: mockPleinExifMetadata,
+  NiveauCarburant: mockNiveauxCarburant,
+  ParametresDetection: [mockParametresDetection],
+  Alerte: mockAlertes,
+  Correction: mockCorrections,
+  RapportMetadata: mockRapportsMetadata,
+};
+
+export interface Parametre {
+  id: string;
+  label: string;
+  description: string;
+  valeur: number;
+  unite: string;
+  min: number;
+  max: number;
+}
+
+export const parametresData: Parametre[] = [
+  {
+    id: "seuil_surconsommation_pct",
+    label: "Seuil de surconsommation",
+    description: "Pourcentage au-dessus de la consommation nominale",
+    valeur: 30,
+    unite: "%",
+    min: 0,
+    max: 100,
+  },
+  {
+    id: "seuil_ecart_gps_pct",
+    label: "Écart GPS vs odomètre",
+    description: "Écart maximal entre GPS et odomètre",
+    valeur: 20,
+    unite: "%",
+    min: 0,
+    max: 100,
+  },
+  {
+    id: "seuil_carburant_disparu_litres",
+    label: "Carburant disparu",
+    description: "Seuil minimal de carburant manquant",
+    valeur: 5,
+    unite: "L",
+    min: 0,
+    max: 1000,
+  },
+  {
+    id: "seuil_exif_heures",
+    label: "Écart EXIF temporel",
+    description: "Écart maximal entre heure EXIF et heure réelle",
+    valeur: 2,
+    unite: "h",
+    min: 0,
+    max: 48,
+  },
+  {
+    id: "seuil_exif_distance_km",
+    label: "Écart EXIF géographique",
+    description: "Écart maximal entre position EXIF et position réelle",
+    valeur: 1,
+    unite: "km",
+    min: 0,
+    max: 100,
+  },
+  {
+    id: "seuil_immobilisation_heures",
+    label: "Durée d'immobilisation",
+    description: "Temps d'immobilisation hors dépôt déclenchant une alerte",
+    valeur: 12,
+    unite: "h",
+    min: 0,
+    max: 168,
+  },
+  {
+    id: "periode_consommation_jours",
+    label: "Période d'analyse",
+    description: "Durée d'analyse de la consommation moyenne",
+    valeur: 7,
+    unite: "jours",
+    min: 1,
+    max: 365,
+  },
+];

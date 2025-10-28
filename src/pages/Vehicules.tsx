@@ -1,53 +1,174 @@
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/Layout/MainLayout';
 import { useVehicules } from '@/hooks/useVehicules';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Car, Plus, Filter } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination';
+import { Car, Plus, Filter, Edit, Trash2, MoreVertical } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { staggerContainer, staggerItem, cardHover } from '@/lib/utils/motionVariants';
+import { MotionWrapper } from '@/components/Layout/MotionWrapper';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
+import { Vehicule } from '@/types';
+import { toast } from 'sonner';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu';
 import { useNavigate } from 'react-router-dom';
-import { motion } from "framer-motion";
+import { VehicleDialog } from '@/components/Vehicules/VehicleDialog';
 
 const Vehicules = () => {
+  const { t } = useTranslation();
   const { data: vehicules, isLoading } = useVehicules();
   const navigate = useNavigate();
+  
+  // Filtres
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [marqueFilter, setMarqueFilter] = useState<string>('all');
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  // Confirm dialogs
+  const [deletingVehicle, setDeletingVehicle] = useState<Vehicule | null>(null);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicule | null>(null);
+
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedVehicule, setSelectedVehicule] = useState<Vehicule | undefined>();
+    
+  const handleAddVehicule = () => {
+    setSelectedVehicule(undefined);
+    setDialogOpen(true);
+  };
+
+  const handleEditVehicule = (vehicule: Vehicule) => {
+    setSelectedVehicule(vehicule);
+    setDialogOpen(true);
+  };
+
+  // Filtrage
+  const filteredVehicules = vehicules?.filter(v => {
+    if (typeFilter !== 'all' && v.type !== typeFilter) return false;
+    if (statusFilter !== 'all') {
+      const isActive = statusFilter === 'actif';
+      if (v.actif !== isActive) return false;
+    }
+    if (marqueFilter !== 'all' && v.marque !== marqueFilter) return false;
+    return true;
+  });
+
+  // Pagination
+  const totalPages = Math.ceil((filteredVehicules?.length || 0) / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedVehicules = filteredVehicules?.slice(startIndex, endIndex);
+
+  // Récupérer les marques uniques
+  const marques = Array.from(new Set(vehicules?.map(v => v.marque) || []));
+  const types = Array.from(new Set(vehicules?.map(v => v.type) || []));
+
+  const handleDeleteVehicle = async () => {
+    if (!deletingVehicle) return;
+    try {
+      // TODO: Implement delete vehicle mutation
+      toast.success(t('success.deleted'));
+      setDeletingVehicle(null);
+    } catch (error) {
+      toast.error(t('errors.generic'));
+    }
+  };
+
+  const handleEditVehicle = async () => {
+    if (!editingVehicle) return;
+    try {
+      // TODO: Implement edit vehicle logic
+      toast.success(t('success.updated'));
+      setEditingVehicle(null);
+    } catch (error) {
+      toast.error(t('errors.generic'));
+    }
+  };
 
   return (
     <MainLayout>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="space-y-6"
-      >
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6"
-      >
-        {/* Titre + sous-titre */}
-        <div className="text-center md:text-left">
-          <h1 className="text-3xl font-bold text-foreground">Gestion des véhicules</h1>
-          <p className="text-muted-foreground mt-2 text-sm">
-            {vehicules?.length || 0} véhicule(s) dans la flotte
-          </p>
-        </div>
+      <div className="space-y-6">
+        <MotionWrapper variant="slideUp">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-center sm:text-left">
+              <h1 className="text-3xl font-bold text-foreground">{t('vehicles.title')}</h1>
+              <p className="text-muted-foreground mt-2">
+                {filteredVehicules?.length || 0} {t('vehicles.inFleet')}
+              </p>
+            </div>
+            <Button className="w-full sm:w-auto" onClick={handleAddVehicule}>
+              <Plus className="h-4 w-4 mr-2" />
+              {t('vehicles.addVehicle')}
+            </Button>
+          </div>
+        </MotionWrapper>
 
-        {/* Actions */}
-        <div className="flex flex-wrap justify-center md:justify-end gap-2">
-          <Button variant="outline" className="flex items-center">
-            <Filter className="h-4 w-4 mr-2" />
-            Filtrer
-          </Button>
-          <Button className="flex items-center">
-            <Plus className="h-4 w-4 mr-2" />
-            Ajouter un véhicule
-          </Button>
-        </div>
-        </motion.div>
-
-
+        {/* Filtres */}
+        <MotionWrapper variant="slideUp" delay={0.1}>
+          <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              {t('common.filters')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <Label>{t('vehicles.type')}</Label>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('common.all')}</SelectItem>
+                    {types.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{t('common.status')}</Label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('common.all')}</SelectItem>
+                    <SelectItem value="actif">{t('vehicles.active')}</SelectItem>
+                    <SelectItem value="inactif">{t('vehicles.inactive')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>{t('vehicles.brand')}</Label>
+                <Select value={marqueFilter} onValueChange={setMarqueFilter}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('common.all')}</SelectItem>
+                    {marques.map(marque => (
+                      <SelectItem key={marque} value={marque}>{marque}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        </MotionWrapper>
 
         {isLoading ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -55,25 +176,74 @@ const Vehicules = () => {
               <Skeleton key={i} className="h-48" />
             ))}
           </div>
-        ) : (
-          <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
-          >
-          {/* <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"> */}
-            {vehicules?.map((vehicule) => (
-              <Card key={vehicule.id} className="hover:shadow-lg transition-shadow">
+        ) : paginatedVehicules && paginatedVehicules.length > 0 ? (
+          <>
+            <motion.div 
+              className="grid gap-4 md:grid-cols-2 lg:grid-cols-3"
+              variants={staggerContainer}
+              initial="initial"
+              animate="animate"
+            >
+              {paginatedVehicules.map((vehicule, index) => (
+              <motion.div
+                key={vehicule.id}
+                variants={staggerItem}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Card className="h-full hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="flex items-center gap-2 px-3 py-2 text-sm">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+
+                        <DropdownMenuContent  className="w-48 rounded-md bg-popover text-popover-foreground shadow-md border">
+                          {/* <DropdownMenuLabel className="text-xs text-muted-foreground px-2 py-1">
+                            {t('common.vehicleActions')}
+                          </DropdownMenuLabel> */}
+
+                          <DropdownMenuSeparator />
+
+                          <DropdownMenuItem
+                            onClick={() => setEditingVehicle(vehicule)}
+                            className="flex items-center gap-2 text-sm hover:bg-muted px-2 py-2 cursor-pointer"
+                          >
+                            <Button 
+                              variant="outline" 
+                              className="flex-1"
+                              onClick={() => handleEditVehicule(vehicule)}
+                            >
+                              <Edit className="h-4 w-4 mr-2" />
+                              {t('common.edit')}
+                            </Button>
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            onClick={() => setDeletingVehicle(vehicule)}
+                            className="flex items-center gap-2 text-sm hover:bg-muted px-2 py-2 cursor-pointer text-destructive"
+                          >
+                            <Button 
+                              variant="outline" 
+                              className="flex-1"
+                              // onClick={() => handleDeleteVehicule(vehicule)}
+                            >
+                            <Trash2 className="h-4 w-4" />
+                            {t('common.delete')}
+                            </Button>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                       <div className="p-2 bg-primary/10 rounded-lg">
                         <Car className="h-5 w-5 text-primary" />
                       </div>
                       <div>
                         <CardTitle className="text-base">
-                          {vehicule.immatriculation}
+                          {vehicule.id}
                         </CardTitle>
                         <p className="text-sm text-muted-foreground">
                           {vehicule.marque} {vehicule.modele}
@@ -81,40 +251,108 @@ const Vehicules = () => {
                       </div>
                     </div>
                     <Badge variant={vehicule.actif ? "secondary" : "destructive"}>
-                      {vehicule.actif ? "Actif" : "Inactif"}
+                      {vehicule.actif ? t('vehicles.active') : t('vehicles.inactive')}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Type:</span>
+                      <span className="text-muted-foreground">{t('vehicles.type')}:</span>
                       <span className="font-medium text-foreground">{vehicule.type}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Capacité:</span>
+                      <span className="text-muted-foreground">{t('vehicles.tankCapacityShort')}:</span>
                       <span className="font-medium text-foreground">{vehicule.capacite_reservoir}L</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Conso nominale:</span>
+                      <span className="text-muted-foreground">{t('vehicles.nominalConsumptionShort')}:</span>
                       <span className="font-medium text-foreground">
                         {vehicule.consommation_nominale}L/100km
                       </span>
                     </div>
                   </div>
-                  <Button variant="outline" className="w-full mt-4" onClick={() =>  navigate(`/vehicle/${vehicule.id}`)}>
-                    Voir détails
+                  <div>
+
+                  </div>
+                  <Button variant="outline" className="w-full mt-4" onClick={() =>  navigate(`/vehicle/${vehicule.immatriculation}`)}>
+                  {t('vehicles.viewDetails')}
                   </Button>
-                  <Button variant="outline" onClick={() => navigate("/addTrips")} className="w-full mt-4">
+                  <Button variant="outline" onClick={() => navigate("/trips/"+vehicule.immatriculation)} className="w-full mt-4">
                     Trajets
                   </Button>
                 </CardContent>
+
               </Card>
-            ))}
-          </motion.div>
+              </motion.div>
+              ))}
+            </motion.div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                    <PaginationItem key={page}>
+                      <PaginationLink
+                        onClick={() => setCurrentPage(page)}
+                        isActive={currentPage === page}
+                        className="cursor-pointer"
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+                  ))}
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      className={currentPage === totalPages ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            )}
+          </>
+        ) : (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">{t('vehicles.noVehicles')}</p>
+            </CardContent>
+          </Card>
         )}
-      {/* </div> */}
-      </motion.div>
+      </div>
+
+      <ConfirmDialog
+        open={!!deletingVehicle}
+        onOpenChange={(open) => !open && setDeletingVehicle(null)}
+        onConfirm={handleDeleteVehicle}
+        title={t('confirm.deleteVehicle')}
+        description={`${t('confirm.deleteVehicleDesc')} ${deletingVehicle?.immatriculation}?`}
+        confirmText={t('common.delete')}
+        icon={Trash2}
+      />
+
+      <ConfirmDialog
+        open={!!editingVehicle}
+        onOpenChange={(open) => !open && setEditingVehicle(null)}
+        onConfirm={handleEditVehicle}
+        title={t('confirm.editVehicle')}
+        description={`${t('confirm.editVehicleDesc')} ${editingVehicle?.immatriculation}?`}
+        confirmText={t('common.edit')}
+        icon={Edit}
+      />
+      <VehicleDialog 
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        vehicule={selectedVehicule}
+      />
     </MainLayout>
   );
 };

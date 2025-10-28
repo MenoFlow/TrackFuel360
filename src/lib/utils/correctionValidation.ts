@@ -122,7 +122,7 @@ export function calculateAverageConsumption(
   cutoffDate.setDate(cutoffDate.getDate() - days);
 
   const recentPleins = pleins
-    .filter(p => p.vehicule_id === vehicule.id && new Date(p.date) > cutoffDate)
+    .filter(p => p.vehicule_id === vehicule.immatriculation && new Date(p.date) > cutoffDate)
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   if (recentPleins.length < 2) return null;
