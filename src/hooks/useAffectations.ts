@@ -4,7 +4,7 @@ import { mockAffectations } from '@/lib/data/mockData.base';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const useAffectations = (chauffeurId?: string, vehiculeId?: string) => {
+export const useAffectations = (chauffeurId?: number, vehiculeId?: number) => {
   return useQuery({
     queryKey: chauffeurId 
       ? ['affectations', 'chauffeur', chauffeurId]
@@ -24,7 +24,7 @@ export const useAffectations = (chauffeurId?: string, vehiculeId?: string) => {
   });
 };
 
-export const useAffectation = (id: string) => {
+export const useAffectation = (id: number) => {
   return useQuery({
     queryKey: ['affectations', id],
     queryFn: async (): Promise<Affectation | undefined> => {
@@ -41,7 +41,7 @@ export const useCreateAffectation = () => {
   return useMutation({
     mutationFn: async (newAffectation: Omit<Affectation, 'id'>): Promise<Affectation> => {
       await delay(500);
-      const affectation = { ...newAffectation, id: `af${Date.now()}` };
+      const affectation = { ...newAffectation, id: Date.now() };
       return affectation;
     },
     onSuccess: () => {
@@ -54,7 +54,7 @@ export const useUpdateAffectation = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<Affectation> }): Promise<Affectation> => {
+    mutationFn: async ({ id, data }: { id: number; data: Partial<Affectation> }): Promise<Affectation> => {
       await delay(500);
       const affectation = mockAffectations.find(a => a.id === id);
       if (!affectation) throw new Error('Affectation non trouvée');
@@ -70,7 +70,7 @@ export const useDeleteAffectation = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (id: string): Promise<void> => {
+    mutationFn: async (id: number): Promise<void> => {
       await delay(500);
       const index = mockAffectations.findIndex(a => a.id === id);
       if (index === -1) throw new Error('Affectation non trouvée');

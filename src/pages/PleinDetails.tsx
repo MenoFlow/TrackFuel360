@@ -15,16 +15,17 @@ import { fr } from 'date-fns/locale';
 import { isPointInGeofence } from '@/lib/utils/geolocation';
 
 const PleinDetails = () => {
-  const { id } = useParams<{ id: string }>();
+  let { id } = useParams<{ id }>();
+  // id = parseInt(id.toString());
   const navigate = useNavigate();
   const { data: pleins } = usePleins();
   const { data: vehicules } = useVehicules();
   const { data: users } = useUsers();
   const { data: exifMetadata } = usePleinMetadata(id);
-  const { data: geofences } = useGeofences();
+  const { geofences } = useGeofences();
 
   const plein = pleins?.find(p => p.id === id);
-  const vehicule = vehicules?.find(v => v.immatriculation === plein?.vehicule_id);
+  const vehicule = vehicules?.find(v => v.id === plein?.vehicule_id);
   const chauffeur = users?.find(u => u.id === plein?.chauffeur_id);
   
   // Vérifier que exifMetadata est un objet unique et non un tableau

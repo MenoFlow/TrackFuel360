@@ -29,12 +29,12 @@ const Pleins = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
-  const getVehiculeImmat = (vehiculeId: string) => {
-    return vehicules?.find(v => v.immatriculation === vehiculeId)?.immatriculation || vehiculeId;
+  const getVehiculeImmat = (vehiculeId: number) => {
+    return vehicules?.find(v => v.id === vehiculeId)?.immatriculation || vehiculeId;
   };
 
   const filteredPleins = pleins?.filter(p => {
-    if (vehiculeFilter !== 'all' && p.vehicule_id !== vehiculeFilter) return false;
+    if (vehiculeFilter !== 'all' && (p.vehicule_id).toString() !== vehiculeFilter) return false;
     if (typeSaisieFilter !== 'all' && p.type_saisie !== typeSaisieFilter) return false;
     return true;
   });

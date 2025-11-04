@@ -39,13 +39,13 @@ export function calculerComparaisonFlotte(
   const comparaisons: ComparaisonVehicule[] = vehiculesActifs.map(vehicule => {
     // Trajets récents du véhicule
     const trajetsVehicule = trajets.filter(t => 
-      t.vehicule_id === vehicule.immatriculation && 
+      t.vehicule_id === vehicule.id && 
       new Date(t.date_debut) >= dateDebut
     );
 
     // Pleins récents du véhicule
     const pleinsVehicule = pleins.filter(p => 
-      p.vehicule_id === vehicule.immatriculation && 
+      p.vehicule_id === vehicule.id && 
       new Date(p.date) >= dateDebut
     );
 
@@ -56,7 +56,7 @@ export function calculerComparaisonFlotte(
 
     // Consommation moyenne (L/100km)
     const consommationMoyenne = calculerConsommationMoyenne(
-      vehicule.immatriculation,
+      vehicule.id,
       periodeJours,
       trajets,
       niveauxCarburant,

@@ -27,7 +27,7 @@ export default function AjoutPleinForm() {
   const createPlein = useCreatePlein();
   const isOnline = useOnlineStatus();
 
-  const [vehiculeId, setVehiculeId] = useState('');
+  const [vehiculeId, setVehiculeId] = useState(null);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [litres, setLitres] = useState('');
   const [prixUnitaire, setPrixUnitaire] = useState('');
@@ -53,7 +53,7 @@ export default function AjoutPleinForm() {
     try {
       await createPlein.mutateAsync({
         vehicule_id: vehiculeId,
-        chauffeur_id: currentUser?.id || '',
+        chauffeur_id: currentUser?.id || null,
         date,
         litres: parseFloat(litres),
         prix_unitaire: parseFloat(prixUnitaire),
@@ -108,7 +108,7 @@ export default function AjoutPleinForm() {
                   </SelectTrigger>
                   <SelectContent>
                     {mesVehicules.map((v) => (
-                      <SelectItem key={v.id} value={v.id}>
+                      <SelectItem key={v.id} value={(v.id).toString()}>
                         {v.immatriculation} - {v.marque} {v.modele}
                       </SelectItem>
                     ))}

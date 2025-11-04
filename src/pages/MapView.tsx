@@ -97,7 +97,7 @@ export default function MapView() {
 
         toast({
           title: 'Alerte de sécurité !',
-          description: `${vehicle.modele} (${vehicle.immatriculation}) est entré dans ${geofence.nom}`,
+          description: `${vehicle.modele} (${vehicle.id}) est entré dans ${geofence.nom}`,
           variant: 'destructive',
         });
       }
@@ -175,7 +175,7 @@ export default function MapView() {
       // Mode création: nouvelle geofence
       if (pendingGeofenceData && name.trim()) {
         const newGeofence: Geofence = {
-          id: `geo-${Date.now()}`,
+          id: Date.now(),
           nom: name,
           type: type,
           lat: pendingGeofenceData.lat,
@@ -254,7 +254,7 @@ export default function MapView() {
    * Supprimer une geofence
    */
   const handleDeleteGeofence = useCallback(
-    async (id: string) => {
+    async (id: number) => {
       await deleteGeofence(id);
     },
     [deleteGeofence]
@@ -264,7 +264,7 @@ export default function MapView() {
    * Mise à jour du rayon via drag du marker
    */
   const handleRadiusMarkerDrag = useCallback(
-    (geofenceId: string, center: [number, number], newPos: { lat: number; lng: number }) => {
+    (geofenceId: number, center: [number, number], newPos: { lat: number; lng: number }) => {
       const newRadius = calculateDistanceMeters(center, [newPos.lat, newPos.lng]);
       updateGeofence(geofenceId, { rayon_metres: newRadius });
     },
@@ -275,7 +275,7 @@ export default function MapView() {
    * Mise à jour du centre via drag du marker
    */
   const handleCenterMarkerDrag = useCallback(
-    (geofenceId: string, newCenter: { lat: number; lng: number }) => {
+    (geofenceId: number, newCenter: { lat: number; lng: number }) => {
       updateGeofence(geofenceId, { lat: newCenter.lat, lon: newCenter.lng });
     },
     [updateGeofence]
@@ -487,7 +487,7 @@ export default function MapView() {
                     const autonomy = (remainingFuel / vehicle.consommation_nominale) * 100;
                     const isInDangerZone = vehiclesInDangerZone.has(vehicle.id);
 
-                    const tripsData = getTripsByVehicleId(vehicle.immatriculation);
+                    const tripsData = getTripsByVehicleId(vehicle.id);
                     
                     // Sélection du dernier trajet
                     const lastTrip = tripsData && tripsData.length > 0 ? tripsData[tripsData.length - 1] : null;
@@ -533,7 +533,7 @@ export default function MapView() {
                               <div className="space-y-1 text-sm">
                                 <div className="flex items-center gap-2">
                                   <span className="text-muted-foreground">Immatriculation:</span>
-                                  <span className="font-medium">{vehicle.immatriculation}</span>
+                                  <span className="font-medium">{vehicle.id}</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                   <Fuel className="h-4 w-4 text-muted-foreground" />

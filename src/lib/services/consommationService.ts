@@ -38,7 +38,7 @@ export function getConsoTrajet(
  * Calcule la consommation moyenne d'un véhicule sur une période
  */
 export function calculerConsommationMoyenne(
-  vehiculeId: string,
+  vehiculeId: number,
   periodeJours: number,
   trajets: Trajet[],
   niveauxCarburant: NiveauCarburant[],
@@ -96,7 +96,7 @@ export function calculerStatistiquesConsommation(
     .filter(v => v.actif)
     .map(vehicule => {
       const consoMoyenne = calculerConsommationMoyenne(
-        vehicule.immatriculation,
+        vehicule.id,
         periodeJours,
         trajets,
         niveauxCarburant,

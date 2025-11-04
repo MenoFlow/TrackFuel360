@@ -70,7 +70,7 @@ export async function createGeofence(geofence: Omit<Geofence, 'id'>): Promise<Ge
   
   const newGeofence: Geofence = {
     ...geofence,
-    id: `geo-${Date.now()}`,
+    id: Date.now(),
   };
   
   const geofences = await fetchGeofences();
@@ -91,7 +91,7 @@ export async function createGeofence(geofence: Omit<Geofence, 'id'>): Promise<Ge
  * - Response: { data: Geofence, message: string }
  * - SQL: UPDATE geofences SET nom = ?, type = ?, lat = ?, lon = ?, rayon_metres = ? WHERE id = ?
  */
-export async function updateGeofence(id: string, updates: Partial<Geofence>): Promise<Geofence> {
+export async function updateGeofence(id: number, updates: Partial<Geofence>): Promise<Geofence> {
   // Simulation d'un délai réseau
   await new Promise(resolve => setTimeout(resolve, 400));
   
@@ -119,7 +119,7 @@ export async function updateGeofence(id: string, updates: Partial<Geofence>): Pr
  * - Response: { success: boolean, message: string }
  * - SQL: DELETE FROM geofences WHERE id = ?
  */
-export async function deleteGeofence(id: string): Promise<void> {
+export async function deleteGeofence(id: number): Promise<void> {
   // Simulation d'un délai réseau
   await new Promise(resolve => setTimeout(resolve, 400));
   

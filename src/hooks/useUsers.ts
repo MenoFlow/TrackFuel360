@@ -5,7 +5,7 @@ import { mockUsers } from '@/lib/mockData';
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Simulate current user (for demo purposes)
-let currentUserId = 'u1'; // Default admin
+let currentUserId = 1; // Default admin
 
 export const useCurrentUser = () => {
   return useQuery({
@@ -29,7 +29,7 @@ export const useUsers = () => {
   });
 };
 
-export const useUsersBySite = (siteId?: string) => {
+export const useUsersBySite = (siteId?: number) => {
   return useQuery({
     queryKey: ['users', 'site', siteId],
     queryFn: async (): Promise<User[]> => {
@@ -60,7 +60,7 @@ export const useCreateUser = () => {
     mutationFn: async (newUser: Omit<User, 'id'>): Promise<User> => {
       await delay(500);
       const user: User = {
-        id: `u${Date.now()}`,
+        id: Date.now(),
         ...newUser,
       };
       mockUsers.push(user);
@@ -76,7 +76,7 @@ export const useUpdateUser = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<User> }): Promise<User> => {
+    mutationFn: async ({ id, data }: { id: number; data: Partial<User> }): Promise<User> => {
       await delay(500);
       const index = mockUsers.findIndex(u => u.id === id);
       if (index === -1) throw new Error('User not found');
@@ -96,7 +96,7 @@ export const useDeleteUser = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (id: string): Promise<void> => {
+    mutationFn: async (id: number): Promise<void> => {
       await delay(500);
       const index = mockUsers.findIndex(u => u.id === id);
       if (index === -1) throw new Error('User not found');
@@ -125,10 +125,10 @@ export const hasPermission = (user: User | undefined, permission: string): boole
 };
 
 // Simulate login (for demo purposes)
-export const login = (userId: string) => {
+export const login = (userId: number) => {
   currentUserId = userId;
 };
 
 export const logout = () => {
-  currentUserId = '';
+  currentUserId = null;
 };

@@ -4,7 +4,7 @@ import { mockNiveauxCarburant } from '@/lib/mockData';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const useNiveauxCarburant = (vehiculeId?: string) => {
+export const useNiveauxCarburant = (vehiculeId?: number) => {
   return useQuery({
     queryKey: vehiculeId ? ['niveaux-carburant', vehiculeId] : ['niveaux-carburant'],
     queryFn: async (): Promise<NiveauCarburant[]> => {
@@ -22,7 +22,7 @@ export const useCreateNiveauCarburant = () => {
   return useMutation({
     mutationFn: async (newNiveau: Omit<NiveauCarburant, 'id'>): Promise<NiveauCarburant> => {
       await delay(500);
-      const niveau = { ...newNiveau, id: `nc${Date.now()}` };
+      const niveau = { ...newNiveau, id: Date.now() };
       return niveau;
     },
     onSuccess: () => {
@@ -31,7 +31,7 @@ export const useCreateNiveauCarburant = () => {
   });
 };
 
-export const useNiveauxCarburantByTrajet = (trajetId: string) => {
+export const useNiveauxCarburantByTrajet = (trajetId: number) => {
   return useQuery({
     queryKey: ['niveaux-carburant', 'trajet', trajetId],
     queryFn: async (): Promise<NiveauCarburant[]> => {
@@ -41,7 +41,7 @@ export const useNiveauxCarburantByTrajet = (trajetId: string) => {
   });
 };
 
-export const useNiveauxCarburantByPlein = (pleinId: string) => {
+export const useNiveauxCarburantByPlein = (pleinId: number) => {
   return useQuery({
     queryKey: ['niveaux-carburant', 'plein', pleinId],
     queryFn: async (): Promise<NiveauCarburant[]> => {

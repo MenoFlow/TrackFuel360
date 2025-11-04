@@ -17,6 +17,7 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { CalendarWrapper } from '../ui/calendar-wrapper';
 
 interface AffectationDialogProps {
   open: boolean;
@@ -25,8 +26,8 @@ interface AffectationDialogProps {
 }
 
 const formSchema = z.object({
-  vehicule_id: z.string().min(1, 'Le véhicule est requis'),
-  chauffeur_id: z.string().min(1, 'Le chauffeur est requis'),
+  vehicule_id: z.number().min(1, 'Le véhicule est requis'),
+  chauffeur_id: z.number().min(1, 'Le chauffeur est requis'),
   date_debut: z.date({ required_error: 'La date de début est requise' }),
   date_fin: z.date({ required_error: 'La date de fin est requise' }),
 }).refine((data) => data.date_fin > data.date_debut, {
@@ -46,8 +47,8 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      vehicule_id: '',
-      chauffeur_id: '',
+      vehicule_id: null,
+      chauffeur_id: null,
       date_debut: new Date(),
       date_fin: new Date(),
     },
@@ -56,18 +57,18 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
   useEffect(() => {
     if (affectation && vehicules) {
       // Trouver le véhicule par son immatriculation pour obtenir son ID
-      const vehicule = vehicules.find(v => v.immatriculation === affectation.vehicule_id);
+      const vehicule = vehicules.find(v => v.id === affectation.vehicule_id);
       
       form.reset({
-        vehicule_id: vehicule?.id || '', // Utiliser l'ID du véhicule pour le formulaire
+        vehicule_id: vehicule?.id || null, // Utiliser l'ID du véhicule pour le formulaire
         chauffeur_id: affectation.chauffeur_id,
         date_debut: new Date(affectation.date_debut),
         date_fin: new Date(affectation.date_fin),
       });
     } else {
       form.reset({
-        vehicule_id: '',
-        chauffeur_id: '',
+        vehicule_id: null,
+        chauffeur_id: null,
         date_debut: new Date(),
         date_fin: new Date(),
       });
@@ -84,7 +85,7 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
       }
 
       const affectationData = {
-        vehicule_id: selectedVehicule.immatriculation, // Utiliser l'immatriculation comme clé étrangère
+        vehicule_id: selectedVehicule.id, // Utiliser l'immatriculation comme clé étrangère
         chauffeur_id: data.chauffeur_id,
         date_debut: data.date_debut.toISOString(),
         date_fin: data.date_fin.toISOString(),
@@ -125,7 +126,7 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('assignments.vehicle')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={(field.value).toString()}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder={t('assignments.selectVehicle')} />
@@ -133,7 +134,7 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
                     </FormControl>
                     <SelectContent>
                       {vehicules?.map((vehicule) => (
-                        <SelectItem key={vehicule.id} value={vehicule.id}>
+                        <SelectItem key={vehicule.id} value={(vehicule.id).toString()}>
                           {vehicule.immatriculation} - {vehicule.marque} {vehicule.modele}
                         </SelectItem>
                       ))}
@@ -150,7 +151,7 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('assignments.driver')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} value={(field.value.toString())}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder={t('assignments.selectDriver')} />
@@ -158,7 +159,7 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
                     </FormControl>
                     <SelectContent>
                       {chauffeurs?.map((chauffeur) => (
-                        <SelectItem key={chauffeur.id} value={chauffeur.id}>
+                        <SelectItem key={chauffeur.id} value={chauffeur.id.toString()}>
                           {chauffeur.prenom} {chauffeur.nom} ({chauffeur.matricule})
                         </SelectItem>
                       ))}
@@ -195,13 +196,14 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
+                    <CalendarWrapper
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                      className="pointer-events-auto"
+                      placeholderText="Choisis une date"
+                    />
                     </PopoverContent>
                   </Popover>
                   <FormMessage />
@@ -235,13 +237,14 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
+                    <CalendarWrapper
+                      mode="single"
+                      selected={field.value}
+                      onSelect={field.onChange}
+                      initialFocus
+                      className="pointer-events-auto"
+                      placeholderText="Choisis une date"
+                    />
                     </PopoverContent>
                   </Popover>
                   <FormMessage />

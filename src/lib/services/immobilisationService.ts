@@ -11,7 +11,7 @@ export interface ImmobilisationInfo {
  * Calcule la durée d'immobilisation d'un véhicule depuis son dernier trajet
  */
 export function calculerDureeImmobilisation(
-  vehiculeId: string,
+  vehiculeId: number,
   trajets: Trajet[],
   traceGPSPoints: TraceGPSPoint[]
 ): ImmobilisationInfo | null {
@@ -43,12 +43,12 @@ export function calculerDureeImmobilisation(
  * Trouve tous les véhicules immobilisés au-delà d'un seuil
  */
 export function trouverVehiculesImmobilises(
-  vehiculeIds: string[],
+  vehiculeIds: number[],
   seuilHeures: number,
   trajets: Trajet[],
   traceGPSPoints: TraceGPSPoint[]
-): Array<{ vehiculeId: string } & ImmobilisationInfo> {
-  const resultats: Array<{ vehiculeId: string } & ImmobilisationInfo> = [];
+): Array<{ vehiculeId: number } & ImmobilisationInfo> {
+  const resultats: Array<{ vehiculeId: number } & ImmobilisationInfo> = [];
   
   vehiculeIds.forEach(vehiculeId => {
     const immobilisation = calculerDureeImmobilisation(vehiculeId, trajets, traceGPSPoints);

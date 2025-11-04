@@ -1,28 +1,15 @@
 // Point d'entrée principal pour toutes les données mock
 // Ce fichier agrège les données de différents modules
 import { 
-  Vehicule, Trajet, Plein, TraceGPSPoint,
+  Vehicule, Trajet, Plein,
   RapportMetadata
 } from '@/types';
-
-// Import des données de base
-export { mockSites, mockUsers, mockVehicules, mockAffectations } from './data/mockData.base';
-
-// Import des données de trajets
-export { mockTrajets, mockTraceGPSPoints } from './data/mockData.trajectories';
-
-// Import des données de carburant
-export { mockPleins, mockPleinExifMetadata, mockNiveauxCarburant } from './data/mockData.fuel';
-
-// Import des données de géolocalisation
-export { mockGeofences, mockGeofencePoints } from './data/mockData.geofences';
-
-// Import des corrections et paramètres
-export { mockCorrections, mockParametresDetection } from './data/mockData.corrections';
 
 // Import des services
 import { calculerDashboardStats } from './services/dashboardService';
 import { generateAlertes } from './services/alerteService';
+
+//----------------------------------------------------------------------------------------
 
 // Import des données pour les calculs
 import { mockVehicules, mockSites, mockUsers, mockAffectations } from './data/mockData.base';
@@ -31,6 +18,24 @@ import { mockTrajets, mockTraceGPSPoints } from './data/mockData.trajectories';
 import { mockPleins, mockNiveauxCarburant, mockPleinExifMetadata } from './data/mockData.fuel';
 import { mockGeofences } from './data/mockData.geofences';
 import { mockCorrections, mockParametresDetection } from './data/mockData.corrections';
+
+//------------------------------------------------------------------------------------------
+
+// Export des données de base
+export { mockSites, mockUsers, mockVehicules, mockAffectations } from './data/mockData.base';
+
+// Export des données de trajets
+export { mockTrajets, mockTraceGPSPoints } from './data/mockData.trajectories';
+
+// Export des données de carburant
+export { mockPleins, mockPleinExifMetadata, mockNiveauxCarburant } from './data/mockData.fuel';
+
+// Export des données de géolocalisation
+export { mockGeofences, mockGeofencePoints } from './data/mockData.geofences';
+
+// Export des corrections et paramètres
+export { mockCorrections, mockParametresDetection } from './data/mockData.corrections';
+
 
 // Générer les alertes dynamiquement
 export const mockAlertes = generateAlertes(
@@ -72,27 +77,27 @@ export const mockDashboardStats = calculerDashboardStats(
   mockAlertes
 );
 
-export const getVehiculeById = (id: string): Vehicule | undefined => {
-  return mockVehicules.find(v => v.immatriculation === id);
+export const getVehiculeById = (id: number): Vehicule | undefined => {
+  return mockVehicules.find(v => v.id === id);
 };
 
-export const getVehiculesBySite = (site: string): Vehicule[] => {
+export const getVehiculesBySite = (site: number): Vehicule[] => {
   return mockVehicules.filter(v => v.site_id === site);
 };
 
-export const getPleinsByVehiculeId = (vehicule_id: string): Plein[] => {
+export const getPleinsByVehiculeId = (vehicule_id: number): Plein[] => {
   return mockPleins.filter(p => p.vehicule_id === vehicule_id);
 };
 
 export const getRefuelsByVehicleId = getPleinsByVehiculeId;
 
-export const getTripsByVehicleId = (vehicule_id: string): Trajet[] => {
+export const getTripsByVehicleId = (vehicule_id: number): Trajet[] => {
   return consolidateTripsWithTraceGps().filter(trajet => trajet.vehicule_id === vehicule_id);
 };
 
 export const addTrip = (trip: Omit<Trajet, 'id'>): Trajet => {
   const newTrip: Trajet = {
-    id: String(mockTrajets.length + 1),
+    id: (mockTrajets.length + 1),
     ...trip
   };
   mockTrajets.push(newTrip);
@@ -103,26 +108,26 @@ export const addTrip = (trip: Omit<Trajet, 'id'>): Trajet => {
 
 // Rapports
 export const mockRapportsMetadata: RapportMetadata[] = [
-  { id: "rapp-1", type: "mensuel_site", titre: "Rapport mensuel Paris Nord", description: "Consommation janvier 2025", date_generation: "2025-02-01T10:00:00Z", utilisateur_id: "user-2", utilisateur_nom: "Marie Martin", nb_lignes: 156, format: "pdf" },
-  { id: "rapp-2", type: "top_ecarts", titre: "Top 10 écarts janvier", description: "Véhicules avec plus grands écarts", date_generation: "2025-02-01T11:00:00Z", utilisateur_id: "user-2", utilisateur_nom: "Marie Martin", nb_lignes: 10, format: "excel" },
+  { id: "rapp-1", type: "mensuel_site", titre: "Rapport mensuel Paris Nord", description: "Consommation janvier 2025", date_generation: "2025-02-01T10:00:00Z", utilisateur_id: 2, utilisateur_nom: "Marie Martin", nb_lignes: 156, format: "pdf" },
+  { id: "rapp-2", type: "top_ecarts", titre: "Top 10 écarts janvier", description: "Véhicules avec plus grands écarts", date_generation: "2025-02-01T11:00:00Z", utilisateur_id: 2, utilisateur_nom: "Marie Martin", nb_lignes: 10, format: "excel" },
 ];
 
-export const mockDataByType = {
+// Objet contenant toutes les données mockées par type
+export const mockDataByType: Record<string, any[]> = {
   Site: mockSites,
   Geofence: mockGeofences,
   User: mockUsers,
   Vehicule: mockVehicules,
   Affectation: mockAffectations,
-  Trajet: mockTrajets,
-  TraceGPSPoint: mockTraceGPSPoints,
+  Trip: mockTrajets,
+  TraceGps: mockTraceGPSPoints,
   Plein: mockPleins,
   PleinExifMetadata: mockPleinExifMetadata,
   NiveauCarburant: mockNiveauxCarburant,
-  ParametresDetection: [mockParametresDetection],
-  Alerte: mockAlertes,
+  Parametre: [mockParametresDetection],
   Correction: mockCorrections,
-  RapportMetadata: mockRapportsMetadata,
 };
+
 
 export interface Parametre {
   id: string;

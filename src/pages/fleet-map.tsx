@@ -147,12 +147,12 @@ export const FleetMap: React.FC<FleetMapProps> = ({ vehicles, onVehicleSelect })
       const trips = getTripsByVehicleId(selectedVehicle.id);
       // Ajouter des traces GPS simulées si elles n'existent pas
       const tripsWithGps = trips.map(trip => {
-        if (!trip.traceGps || trip.traceGps.length === 0) {
-          return {
-            ...trip,
-            traceGps: generateGpsTrace(selectedVehicle.position, trip.distance_km)
-          };
-        }
+        // if (!trip.traceGps || trip.traceGps.length === 0) {
+        //   return {
+        //     ...trip,
+        //     traceGps: generateGpsTrace(selectedVehicle.position, trip.distance_km)
+        //   };
+        // }
         return trip;
       });
       setVehicleTrips(tripsWithGps);
@@ -189,7 +189,7 @@ export const FleetMap: React.FC<FleetMapProps> = ({ vehicles, onVehicleSelect })
               const fuelStatus = getFuelStatus(vehicle);
               const remainingFuel = calculateFuelRemaining(vehicle);
               const autonomy = remainingFuel / vehicle.consommation_nominale * 100;
-              const tripsData = getTripsByVehicleId(vehicle.immatriculation);
+              const tripsData = getTripsByVehicleId(vehicle.id);
 
               // Sélection du dernier trajet
               const lastTrip = tripsData && tripsData.length > 0 ? tripsData[tripsData.length - 1] : null;

@@ -112,11 +112,11 @@ const GestionCorrections = () => {
     setDetailsOpen(true);
   };
 
-  const handleValidate = async (correctionId: string, comment: string) => {
+  const handleValidate = async (correctionId: number, comment: string) => {
     try {
       await validateMutation.mutateAsync({
         id: correctionId,
-        validated_by: currentUser?.id || 'admin'
+        validated_by: currentUser?.id || null
       });
       
       toast({
@@ -135,11 +135,11 @@ const GestionCorrections = () => {
     }
   };
 
-  const handleReject = async (correctionId: string, comment: string) => {
+  const handleReject = async (correctionId: number, comment: string) => {
     try {
       await rejectMutation.mutateAsync({
         id: correctionId,
-        validated_by: currentUser?.id || 'admin'
+        validated_by: currentUser?.id || null
       });
       
       toast({
@@ -193,9 +193,9 @@ const GestionCorrections = () => {
     return labels[field] || field;
   };
 
-  const getUserName = (userId: string) => {
+  const getUserName = (userId: number) => {
     const user = users?.find(u => u.id === userId);
-    return user ? `${user.prenom} ${user.nom}` : userId;
+    return user ? `${user.prenom} ${user.nom}` : (userId).toString();
   };
 
   // Filtrage des corrections
@@ -204,12 +204,12 @@ const GestionCorrections = () => {
     
     if (vehiculeFilter !== 'all') {
       const plein = pleins?.find(p => p.id === c.record_id);
-      if (plein?.vehicule_id !== vehiculeFilter) return false;
+      if ((plein?.vehicule_id).toString() !== vehiculeFilter) return false;
     }
     
     if (chauffeurFilter !== 'all') {
       const plein = pleins?.find(p => p.id === c.record_id);
-      if (plein?.chauffeur_id !== chauffeurFilter) return false;
+      if ((plein?.chauffeur_id).toString() !== chauffeurFilter) return false;
     }
     
     return true;
@@ -310,7 +310,7 @@ const GestionCorrections = () => {
                     <SelectContent>
                       <SelectItem value="all">{t('corrections.allVehicles')}</SelectItem>
                       {vehicules?.map(v => (
-                        <SelectItem key={v.id} value={v.id}>
+                        <SelectItem key={v.id} value={(v.id).toString()}>
                           {v.immatriculation}
                         </SelectItem>
                       ))}
@@ -328,7 +328,7 @@ const GestionCorrections = () => {
                       {users
                         ?.filter(u => u.role === 'driver')
                         .map(u => (
-                          <SelectItem key={u.id} value={u.id}>
+                          <SelectItem key={u.id} value={(u.id).toString()}>
                             {u.prenom} {u.nom}
                           </SelectItem>
                         ))}

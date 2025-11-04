@@ -6,7 +6,7 @@ import { useOnlineStatus } from './useOnlineStatus';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const usePleins = (vehiculeId?: string) => {
+export const usePleins = (vehiculeId?: number) => {
   const isOnline = useOnlineStatus();
 
   return useQuery({
@@ -44,7 +44,7 @@ export const useCreatePlein = () => {
 
       // Mode en ligne : envoyer au backend (simulé pour l'instant)
       await delay(500);
-      const plein = { ...newPlein, id: `p${Date.now()}` };
+      const plein = { ...newPlein, id: Date.now() };
       
       // TODO: Remplacer par un vrai appel API
       // const response = await fetch('/api/pleins', {

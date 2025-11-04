@@ -174,8 +174,8 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSubmit, isLoading }
             <div className="space-y-2">
               <Label htmlFor="site">{t('vehicles.site')} ({t('common.new')})</Label>
               <Select
-                value={formData.site_id || ''}
-                onValueChange={(value) => setFormData({ ...formData, site_id: value || undefined })}
+                value={(formData.site_id).toString() || ''}
+                onValueChange={(value) => setFormData({ ...formData, site_id: parseInt(value) || undefined })}
               >
                 <SelectTrigger id="site">
                   <SelectValue placeholder={t('vehicles.site')} />
@@ -183,7 +183,7 @@ export const UserFormDialog = ({ open, onOpenChange, user, onSubmit, isLoading }
                 <SelectContent>
                   <SelectItem value="aucun">{t('common.none')}</SelectItem>
                   {sites?.map((site) => (
-                    <SelectItem key={site.id} value={site.id}>
+                    <SelectItem key={site.id} value={(site.id).toString()}>
                       {site.nom} - {site.ville}
                     </SelectItem>
                   ))}

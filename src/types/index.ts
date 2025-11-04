@@ -30,9 +30,9 @@ export type FormatExport = 'pdf' | 'excel' | 'csv' | 'json';
 export interface RapportFilters {
   date_debut?: string;
   date_fin?: string;
-  site_id?: string;
-  vehicule_id?: string;
-  chauffeur_id?: string;
+  site_id?: number;
+  vehicule_id?: number;
+  chauffeur_id?: number;
   type_anomalie?: AlerteType;
   score_minimum?: number;
   statut_correction?: CorrectionStatus;
@@ -45,7 +45,7 @@ export interface RapportMetadata {
   titre: string;
   description: string;
   date_generation: string;
-  utilisateur_id: string;
+  utilisateur_id: number;
   utilisateur_nom: string;
   filtres?: RapportFilters;
   nb_lignes: number;
@@ -67,107 +67,122 @@ export interface RapportData {
 }
 
 export interface User {
-  id: string;
+  id: number;
   email: string;
   matricule: string;
   nom: string;
   prenom: string;
   role: AppRole;
-  site_id?: string;
+  site_id?: number;
+  password_hash?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
+export type VehiculeType = 'essence' | 'diesel' | 'hybride' | 'electrique' | 'gpl';
 export interface Vehicule {
-  id: string;
+  id: number;
   immatriculation: string;
   marque: string;
   modele: string;
-  type: string;
+  type: VehiculeType;
   capacite_reservoir: number;
-  consommation_nominale: number; // L/100km
-  site_id?: string;
-  actif: boolean;
-  carburant_initial?: number; // Litres
+  consommation_nominale: number;
+  carburant_initial?: number;
+  actif?: boolean;
+  site_id?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface VehicleWithPosition extends Vehicule {
   position: [number, number];
 }
 
-
 export interface Site {
-  id: string;
+  id: number;
   nom: string;
   ville: string;
   pays: string;
 }
 
 export interface Affectation {
-  id: string;
-  vehicule_id: string;
-  chauffeur_id: string;
+  id: number;
+  vehicule_id: number;
+  chauffeur_id: number;
   date_debut: string;
   date_fin: string;
+  created_at?: string;
 }
 
 
-
 export interface TraceGPSPoint {
-  id: string;
-  trajet_id: string;
+  id: number;
+  trajet_id: number;
   sequence: number;
   latitude: number;
   longitude: number;
-  timestamp?: string;
+  timestamp: string;
   traceGps?: any
 }
 
 export interface Trajet {
-  id: string;
-  vehicule_id: string;
-  chauffeur_id: string;
-  date_debut: string;
-  date_fin: string;
+  id: number;
+  vehicule_id: number;
+  chauffeur_id: number;
+  date_debut: string; // ISO: '2025-10-07T08:00:00Z'
+  date_fin: string;   // ISO: '2025-10-07T12:15:00Z'
   distance_km: number;
   type_saisie: SaisieType;
-  traceGps?: any;
+  traceGps?: TraceGPSPoint[]; // Optionnel : tableau de points GPS
 }
 
-export interface PleinExifMetadata {
-  id: string;
-  plein_id: string;
-  date: string;
-  heure: string;
-  latitude: number;
-  longitude: number;
-  modele_telephone: string;
-}
 
+// @/types/fuel.ts
 export interface Plein {
-  id: string;
-  vehicule_id: string;
-  chauffeur_id: string;
+  id: number;
+  vehicule_id: number;
+  chauffeur_id: number;
   date: string;
   litres: number;
   prix_unitaire: number;
+  montant_total?: number;
   odometre: number;
-  station?: string;
-  photo_bon?: string;
-  ocr_data?: any;
-  hash_bon?: string;
-  type_saisie: SaisieType;
-  geofence_id?: string;
-  latitude?: number;
-  longitude?: number;
+  station: string;
+  type_saisie: 'manuelle' | 'auto';
+  photo_bon?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
+export interface PleinExifMetadata {
+  id: number;
+  plein_id: number;
+  date: string; // 'YYYY-MM-DD'
+  heure: string; // 'HH:MM:SS'
+  latitude?: number | null;
+  longitude?: number | null;
+  modele_telephone?: string | null;
 }
 
 export interface NiveauCarburant {
-  id: string;
-  vehicule_id: string;
+  id: number;
+  vehicule_id: number;
+  timestamp: string;
+  niveau: number;
+  type: 'avant_trajet' | 'avant_plein' | 'apres_plein' | 'apres_trajet';
+  trajet_id?: number | null;
+  plein_id?: number | null;
+}
+
+export interface NiveauCarburant {
+  id: number;
+  vehicule_id: number;
   timestamp: string;
   niveau: number; // Litres
   type: 'avant_trajet' | 'apres_trajet' | 'avant_plein' | 'apres_plein';
-  trajet_id?: string; // Référence au trajet concerné
-  plein_id?: string; // Référence au plein concerné
+  trajet_id?: number; // Référence au trajet concerné
+  plein_id?: number; // Référence au plein concerné
 }
 
 export interface ParametresDetection {
@@ -189,7 +204,7 @@ export interface AlerteMetadata {
 
 export interface Alerte {
   id: string;
-  vehicule_id: string;
+  vehicule_id: number;
   type: AlerteType;
   titre: string;
   description: string;
@@ -197,46 +212,47 @@ export interface Alerte {
   status: AlerteStatus;
   date_detection: string;
   justification?: string;
-  resolved_by?: string;
+  resolved_by?: number;
   resolved_at?: string;
-  chauffeur_id?: string;
+  chauffeur_id?: number;
   deviation_percent?: number;
   litres_manquants?: number;
   severity?: 'low' | 'medium' | 'high';
 }
 
 export interface Correction {
-  id: string;
+  id: number;
   table: string;
-  record_id: string;
+  record_id: number;
   champ: string;
   old_value: any;
   new_value: any;
   status: CorrectionStatus;
   comment?: string;
-  requested_by: string;
+  requested_by: number;
   requested_at: string;
-  validated_by?: string;
+  validated_by?: number;
   validated_at?: string;
 }
 
-export interface GeofencePoint {
-  id: string;
-  geofence_id: string;
-  sequence: number;
-  latitude: number;
-  longitude: number;
-}
-
+// @/types/geofence.ts
 export type GeofenceType = 'depot' | 'station' | 'zone_risque';
 
 export interface Geofence {
-  id: string;
+  id: number;
   nom: string;
   type: GeofenceType;
   lat: number;
   lon: number;
   rayon_metres: number;
+}
+
+export interface GeofencePoint {
+  id: number;
+  geofence_id: number;
+  sequence: number;
+  latitude: number;
+  longitude: number;
 }
 
 export type FuelStatus = 'critical' | 'low' | 'medium' | 'high';
@@ -250,10 +266,10 @@ export interface FilterState {
 
 export interface Alert {
   id: string;
-  vehicleId: string;
+  vehicleId: number;
   vehicleImmatriculation: string;
   vehicleModele: string;
-  geofenceId: string;
+  geofenceId: number;
   geofenceName: string;
   timestamp: string;
   coordinates: [number, number];
@@ -287,18 +303,16 @@ export interface DashboardStats {
   }>;
 }
 export const DATA_TYPES = [
-  { value: 'Geofence', label: 'Geofence', dependencies: [] },
-  { value: 'Site', label: 'Site', dependencies: [] },
-  { value: 'User', label: 'Utilisateurs', dependencies: [] },
+  { value: 'Site', label: 'Sites', dependencies: [] },
+  { value: 'User', label: 'Utilisateurs', dependencies: ['Site'] },
+  { value: 'Geofence', label: 'Geofences', dependencies: [] },
   { value: 'Vehicule', label: 'Véhicules', dependencies: ['Site'] },
   { value: 'Affectation', label: 'Affectations', dependencies: ['Vehicule', 'User'] },
-  { value: 'Trajet', label: 'Trajets', dependencies: ['Vehicule', 'User'] },
-  { value: 'TraceGPSPoint', label: 'Points GPS', dependencies: ['Trajet'] },
+  { value: 'Trip', label: 'Trajets', dependencies: ['Vehicule', 'User'] },
+  { value: 'TraceGps', label: 'Traces GPS', dependencies: ['Trip'] },
   { value: 'Plein', label: 'Pleins', dependencies: ['Vehicule', 'User'] },
   { value: 'PleinExifMetadata', label: 'Métadonnées EXIF', dependencies: ['Plein'] },
-  { value: 'NiveauCarburant', label: 'Niveaux Carburant', dependencies: ['Vehicule'] },
-  { value: 'ParametresDetection', label: 'Paramètres Détection', dependencies: [] },
-  { value: 'Alerte', label: 'Alertes', dependencies: ['Vehicule'] },
-  { value: 'Correction', label: 'Corrections', dependencies: [] },
-  { value: 'RapportMetadata', label: 'Rapports', dependencies: ['User'] },
+  { value: 'NiveauCarburant', label: 'Niveaux Carburant', dependencies: ['Vehicule', 'Plein'] },
+  { value: 'Parametre', label: 'Paramètres', dependencies: [] },
+  { value: 'Correction', label: 'Corrections', dependencies: ['User'] },
 ] as const;

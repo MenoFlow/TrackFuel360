@@ -24,7 +24,7 @@ export const useCreateCorrection = () => {
       await delay(500);
       const correction = { 
         ...newCorrection, 
-        id: `c${Date.now()}`,
+        id: Date.now(),
         requested_at: new Date().toISOString()
       };
       return correction;
@@ -40,8 +40,8 @@ export const useValidateCorrection = () => {
   
   return useMutation({
     mutationFn: async ({ id, validated_by }: { 
-      id: string; 
-      validated_by: string;
+      id: number; 
+      validated_by: number;
     }): Promise<Correction> => {
       await delay(500);
       const correction = mockCorrections.find(c => c.id === id);
@@ -64,8 +64,8 @@ export const useRejectCorrection = () => {
   
   return useMutation({
     mutationFn: async ({ id, validated_by }: { 
-      id: string; 
-      validated_by: string;
+      id: number; 
+      validated_by: number;
     }): Promise<Correction> => {
       await delay(500);
       const correction = mockCorrections.find(c => c.id === id);

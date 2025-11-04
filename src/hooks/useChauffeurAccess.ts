@@ -34,7 +34,7 @@ export const useChauffeurAccess = () => {
   const isAuditor = currentUser?.role === 'auditor';
 
   // Filtre les données pour ne retourner que celles du chauffeur
-  const filterDataForDriver = <T extends { chauffeur_id?: string }>(data: T[]): T[] => {
+  const filterDataForDriver = <T extends { chauffeur_id?: number }>(data: T[]): T[] => {
     if (!isDriver || !currentUser) return data;
     return data.filter(item => item.chauffeur_id === currentUser.id);
   };
@@ -48,9 +48,9 @@ export const useChauffeurAccess = () => {
   };
 
   // Filtre les véhicules assignés au chauffeur
-  const filterVehiculesForDriver = <T extends { immatriculation: string }>(
+  const filterVehiculesForDriver = <T extends { id: number }>(
     vehicules: T[],
-    affectations: Array<{ vehicule_id: string; chauffeur_id: string; date_debut: string; date_fin: string }>
+    affectations: Array<{ vehicule_id: number; chauffeur_id: number; date_debut: string; date_fin: string }>
   ): T[] => {
     if (!isDriver || !currentUser) return vehicules;
     
@@ -60,7 +60,7 @@ export const useChauffeurAccess = () => {
       isTodayBetween(a.date_debut, a.date_fin)
     )
     .map(a => a.vehicule_id);
-    return vehicules.filter(v => assignedVehicleIds.includes(v.immatriculation));
+    return vehicules.filter(v => assignedVehicleIds.includes(v.id));
   };
 
   return {

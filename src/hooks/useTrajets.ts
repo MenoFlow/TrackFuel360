@@ -6,7 +6,7 @@ import { useOnlineStatus } from './useOnlineStatus';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const useTrajets = (vehiculeId?: string) => {
+export const useTrajets = (vehiculeId?: number) => {
   const isOnline = useOnlineStatus();
 
   return useQuery({
@@ -44,7 +44,7 @@ export const useCreateTrajet = () => {
 
       // Mode en ligne : envoyer au backend (simulé pour l'instant)
       await delay(500);
-      const trajet = { ...newTrajet, id: `t${Date.now()}` };
+      const trajet = { ...newTrajet, id: Date.now() };
       
       // TODO: Remplacer par un vrai appel API
       // const response = await fetch('/api/trajets', {

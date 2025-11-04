@@ -7,7 +7,7 @@ import { haversineDistance, isPointInGeofence } from './geolocation';
  */
 export function detectPleinHorsZone(
   plein: Plein,
-  stationsAutorisees: Array<{ id: string; nom: string; lat: number; lon: number; rayon_metres: number }>,
+  stationsAutorisees: Array<{ id: number; nom: string; lat: number; lon: number; rayon_metres: number }>,
   vehicule: Vehicule
 ): Alerte | null {
   if (!plein.latitude || !plein.longitude) return null;
@@ -35,7 +35,7 @@ export function detectPleinHorsZone(
     
     return {
       id: `alert_hz_${plein.id}`,
-      vehicule_id: vehicule.immatriculation,
+      vehicule_id: vehicule.id,
       chauffeur_id: plein.chauffeur_id,
       type: 'plein_hors_zone',
       titre: 'Plein effectué hors zone autorisée',
@@ -65,7 +65,7 @@ export function detectSurconsommation(
     
     return {
       id: `alert_conso_${vehicule.immatriculation}`,
-      vehicule_id: vehicule.immatriculation,
+      vehicule_id: vehicule.id,
       type: 'consommation_elevee',
       titre: 'Surconsommation détectée',
       description: `Consommation moyenne de ${consommationMoyenne.toFixed(1)} L/100km vs nominale ${vehicule.consommation_nominale} L/100km (+${deviationPercent.toFixed(0)}%)`,
@@ -172,7 +172,7 @@ export function detectImmobilisationAnormale(
   vehicule: Vehicule,
   position: [number, number],
   dureeHeures: number,
-  depots: Array<{ id: string; nom: string; lat: number; lon: number; rayon_metres: number }>,
+  depots: Array<{ id: number; nom: string; lat: number; lon: number; rayon_metres: number }>,
   seuilHeures: number = 12
 ): Alerte | null {
   if (dureeHeures < seuilHeures) return null;
@@ -185,7 +185,7 @@ export function detectImmobilisationAnormale(
   if (!dansDepot) {
     return {
       id: `alert_immob_${vehicule.immatriculation}_${Date.now()}`,
-      vehicule_id: vehicule.immatriculation,
+      vehicule_id: vehicule.id,
       type: 'immobilisation_anormale',
       titre: 'Immobilisation prolongée hors dépôt',
       description: `Véhicule immobilisé ${dureeHeures.toFixed(1)}h en dehors d'un dépôt autorisé`,

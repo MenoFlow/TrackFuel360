@@ -28,7 +28,7 @@ const Affectations = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedAffectation, setSelectedAffectation] = useState<Affectation | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [affectationToDelete, setAffectationToDelete] = useState<string | null>(null);
+  const [affectationToDelete, setAffectationToDelete] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
@@ -43,7 +43,7 @@ const Affectations = () => {
     setDialogOpen(true);
   };
 
-  const handleDeleteClick = (id: string) => {
+  const handleDeleteClick = (id: number) => {
     setAffectationToDelete(id);
     setDeleteDialogOpen(true);
   };
@@ -62,18 +62,13 @@ const Affectations = () => {
     }
   };
 
-  const getVehiculeImmatriculation = (immatriculation: string) => {
-    // vehicule_id est déjà l'immatriculation dans la nouvelle structure
-    return immatriculation;
+  const getVehiculeImmatriculation = (id: number) => {
+    return vehicules.find(d => d.id === id).immatriculation;
   };
 
-  const getVehiculeInfo = (immatriculation: string) => {
-    return vehicules?.find(v => v.immatriculation === immatriculation);
-  };
-
-  const getChauffeurName = (chauffeurId: string) => {
+  const getChauffeurName = (chauffeurId: number) => {
     const user = users?.find(u => u.id === chauffeurId);
-    return user ? `${user.prenom} ${user.nom}` : chauffeurId;
+    return user ? `${user.prenom} ${user.nom}` : "";
   };
 
   const filteredAffectations = affectations?.filter(affectation => {

@@ -33,7 +33,7 @@ export function VehicleDialog({ open, onOpenChange, vehicule }: VehicleDialogPro
     consommation_nominale: '',
     carburant_initial: '',
     actif: true,
-    site_id: '',
+    site_id: null ,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -50,7 +50,7 @@ export function VehicleDialog({ open, onOpenChange, vehicule }: VehicleDialogPro
         consommation_nominale: vehicule.consommation_nominale.toString(),
         carburant_initial: vehicule.carburant_initial?.toString() || '0',
         actif: vehicule.actif,
-        site_id: vehicule.site_id || '',
+        site_id: vehicule.site_id || null,
       });
     } else {
       setFormData({
@@ -322,7 +322,7 @@ export function VehicleDialog({ open, onOpenChange, vehicule }: VehicleDialogPro
                 <SelectContent>
                   <SelectItem value="aucun">Aucun site</SelectItem>
                   {sites?.map((site) => (
-                    <SelectItem key={site.id} value={site.id}>
+                    <SelectItem key={site.id} value={(site.id).toString()}>
                       {site.nom}
                     </SelectItem>
                   ))}

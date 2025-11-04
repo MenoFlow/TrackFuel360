@@ -104,14 +104,14 @@ export const RapportFiltersComponent = ({ filtres, onFiltresChange, onReset, sel
           {shouldShowFilter('site_id') && (
             <div className="space-y-2">
               <Label htmlFor="site_id">{t('site.title')}</Label>
-              <Select value={localFiltres.site_id || ''} onValueChange={(v) => handleChange('site_id', v)}>
+              <Select value={(localFiltres.site_id).toString() || ''} onValueChange={(v) => handleChange('site_id', v)}>
                 <SelectTrigger id="site_id">
                   <SelectValue placeholder={t('comparison.allSites')} />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="aucun">{t('comparison.allSites')}</SelectItem>
                   {sites?.map(site => (
-                    <SelectItem key={site.id} value={site.id}>
+                    <SelectItem key={site.id} value={(site.id).toString()}>
                       {site.nom}
                     </SelectItem>
                   ))}
@@ -124,7 +124,7 @@ export const RapportFiltersComponent = ({ filtres, onFiltresChange, onReset, sel
           {shouldShowFilter('vehicule_id') && (
             <div className="space-y-2">
               <Label htmlFor="vehicule_id">{t('reports.vehicle')}</Label>
-              <Select value={localFiltres.vehicule_id || ''} onValueChange={(v) => handleChange('vehicule_id', v)}>
+              <Select value={(localFiltres.vehicule_id).toString() || ''} onValueChange={(v) => handleChange('vehicule_id', v)}>
                 <SelectTrigger id="vehicule_id">
                   <SelectValue placeholder={t('corrections.allVehicles')} />
                 </SelectTrigger>
@@ -144,7 +144,7 @@ export const RapportFiltersComponent = ({ filtres, onFiltresChange, onReset, sel
           {shouldShowFilter('chauffeur_id') && (
             <div className="space-y-2">
               <Label htmlFor="chauffeur_id">Chauffeur</Label>
-              <Select value={localFiltres.chauffeur_id || ''} onValueChange={(v) => handleChange('chauffeur_id', v)}>
+              <Select value={(localFiltres.chauffeur_id).toString() || ''} onValueChange={(v) => handleChange('chauffeur_id', v)}>
                 <SelectTrigger id="chauffeur_id">
                   <SelectValue placeholder="Tous les chauffeurs" />
                 </SelectTrigger>

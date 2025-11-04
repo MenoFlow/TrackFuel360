@@ -142,56 +142,79 @@ export const validateDependencies = (
   return { valid: true };
 };
 
+// Validation des champs requis par type de données
+const requiredFieldsByType: Record<string, string[]> = {
+  Site: ['nom', 'ville', 'pays'],
+  Geofence: ['nom', 'type', 'lat', 'lon', 'rayon_metres'],
+  User: ['email', 'matricule', 'nom', 'prenom', 'role', 'password_hash'],
+  Vehicule: ['immatriculation', 'marque', 'modele', 'type', 'capacite_reservoir', 'consommation_nominale'],
+  Affectation: ['vehicule_id', 'chauffeur_id', 'date_debut', 'date_fin'],
+  Trip: ['vehicule_id', 'chauffeur_id', 'date_debut', 'date_fin', 'distance_km', 'type_saisie'],
+  TraceGps: ['trajet_id', 'sequence', 'latitude', 'longitude', 'timestamp'],
+  Plein: ['vehicule_id', 'chauffeur_id', 'date', 'litres', 'prix_unitaire', 'odometre', 'station', 'type_saisie'],
+  PleinExifMetadata: ['plein_id'],
+  NiveauCarburant: ['vehicule_id', 'timestamp', 'niveau', 'type'],
+  Parametre: ['id', 'label', 'description', 'valeur', 'unite', 'min', 'max'],
+  Correction: ['table', 'record_id', 'champ', 'old_value', 'new_value', 'status', 'requested_by', 'requested_at'],
+};
+
+// Validation des formats de champs spécifiques
+const fieldFormatsByType: Record<string, Record<string, 'number' | 'date' | 'boolean'>> = {
+  Site: {},
+  Geofence: { lat: 'number', lon: 'number', rayon_metres: 'number' },
+  User: { site_id: 'number' },
+  Vehicule: { site_id: 'number', capacite_reservoir: 'number', consommation_nominale: 'number', carburant_initial: 'number', actif: 'boolean' },
+  Affectation: { vehicule_id: 'number', chauffeur_id: 'number', date_debut: 'date', date_fin: 'date' },
+  Trip: { vehicule_id: 'number', chauffeur_id: 'number', date_debut: 'date', date_fin: 'date', distance_km: 'number' },
+  TraceGps: { trajet_id: 'number', sequence: 'number', latitude: 'number', longitude: 'number', timestamp: 'date' },
+  Plein: { vehicule_id: 'number', chauffeur_id: 'number', date: 'date', litres: 'number', prix_unitaire: 'number', montant_total: 'number', odometre: 'number', latitude: 'number', longitude: 'number' },
+  PleinExifMetadata: { plein_id: 'number', date: 'date', latitude: 'number', longitude: 'number' },
+  NiveauCarburant: { vehicule_id: 'number', plein_id: 'number', timestamp: 'date', niveau: 'number' },
+  Parametre: { valeur: 'number', min: 'number', max: 'number' },
+  Correction: { validated_by: 'number', requested_at: 'date', validated_at: 'date' },
+};
+
+// Champs qui acceptent les valeurs négatives (coordonnées géographiques)
+const allowNegativeFields = ['lat', 'lon', 'latitude', 'longitude'];
+
 // Valide le format des valeurs (nombres, dates, booléens)
 export const validateFieldFormats = (type: string, data: Record<string, any>): { valid: boolean; message?: string } => {
-  // Validation des nombres positifs
-  const numberFields: Record<string, string[]> = {
-    Vehicule: ['capacite_reservoir', 'consommation_nominale'],
-    Trajet: ['distance_km'],
-    Plein: ['litres', 'prix_unitaire', 'odometre'],
-    Geofence: ['lat', 'lon', 'rayon_metres'],
-    Alerte: ['score'],
-  };
-
-  const numFields = numberFields[type] || [];
-  for (const field of numFields) {
-    if (data[field] !== undefined && data[field] !== null) {
-      const num = Number(data[field]);
-      if (isNaN(num) || num < 0) {
+  const formats = fieldFormatsByType[type] || {};
+  
+  for (const [field, format] of Object.entries(formats)) {
+    const value = data[field];
+    
+    if (value === undefined || value === null) continue;
+    
+    if (format === 'number') {
+      const num = Number(value);
+      if (isNaN(num)) {
         return {
           valid: false,
-          message: `Le champ "${field}" doit être un nombre positif (valeur reçue: ${data[field]})`,
+          message: `Le champ "${field}" doit être un nombre (valeur reçue: ${value})`,
         };
       }
-    }
-  }
-
-  // Validation des dates
-  const dateFields: Record<string, string[]> = {
-    Affectation: ['date_debut', 'date_fin'],
-    Trajet: ['date_debut', 'date_fin'],
-    Plein: ['date'],
-    Alerte: ['date_detection'],
-  };
-
-  const dtFields = dateFields[type] || [];
-  for (const field of dtFields) {
-    if (data[field] && isNaN(Date.parse(data[field]))) {
-      return {
-        valid: false,
-        message: `Le champ "${field}" doit être une date valide (valeur reçue: ${data[field]})`,
-      };
-    }
-  }
-
-  // Validation des booléens
-  if (type === 'Vehicule' && data['actif'] !== undefined) {
-    const val = data['actif'];
-    if (typeof val !== 'boolean' && val !== 'true' && val !== 'false' && val !== 0 && val !== 1) {
-      return {
-        valid: false,
-        message: `Le champ "actif" doit être un booléen (valeur reçue: ${val})`,
-      };
+      // Vérifier si le champ accepte les valeurs négatives
+      if (num < 0 && !allowNegativeFields.includes(field) && (field !== "lat" || "long")) {
+        return {
+          valid: false,
+          message: `Le champ "${field}" doit être un nombre positif (valeur reçue: ${value})`,
+        };
+      }
+    } else if (format === 'date') {
+      if (isNaN(Date.parse(value))) {
+        return {
+          valid: false,
+          message: `Le champ "${field}" doit être une date valide (valeur reçue: ${value})`,
+        };
+      }
+    } else if (format === 'boolean') {
+      if (typeof value !== 'boolean' && value !== 'true' && value !== 'false' && value !== 0 && value !== 1) {
+        return {
+          valid: false,
+          message: `Le champ "${field}" doit être un booléen (valeur reçue: ${value})`,
+        };
+      }
     }
   }
 
@@ -200,17 +223,6 @@ export const validateFieldFormats = (type: string, data: Record<string, any>): {
 
 // Valide les champs requis
 export const validateRequiredFields = (type: string, data: Record<string, any>): { valid: boolean; message?: string } => {
-  const requiredFieldsByType: Record<string, string[]> = {
-    Site: ['nom', 'ville', 'pays'],
-    User: ['email', 'matricule', 'nom', 'prenom', 'role'],
-    Vehicule: ['immatriculation', 'marque', 'modele', 'type', 'capacite_reservoir', 'consommation_nominale', 'actif'],
-    Affectation: ['vehicule_id', 'chauffeur_id', 'date_debut', 'date_fin'],
-    Trajet: ['vehicule_id', 'chauffeur_id', 'date_debut', 'date_fin', 'distance_km', 'type_saisie'],
-    Plein: ['vehicule_id', 'chauffeur_id', 'date', 'litres', 'prix_unitaire', 'odometre', 'type_saisie'],
-    Geofence: ['nom', 'type', 'lat', 'lon', 'rayon_metres'],
-    Alerte: ['vehicule_id', 'type', 'titre', 'description', 'score', 'status', 'date_detection'],
-  };
-
   const requiredFields = requiredFieldsByType[type] || [];
   const missingFields = requiredFields.filter(field => !data[field] && data[field] !== false && data[field] !== 0);
 

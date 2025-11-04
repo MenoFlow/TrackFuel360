@@ -14,7 +14,7 @@ export const useSites = () => {
   });
 };
 
-export const useSite = (id: string) => {
+export const useSite = (id: number) => {
   return useQuery({
     queryKey: ['sites', id],
     queryFn: async (): Promise<Site | undefined> => {
@@ -31,7 +31,7 @@ export const useCreateSite = () => {
   return useMutation({
     mutationFn: async (newSite: Omit<Site, 'id'>): Promise<Site> => {
       await delay(500);
-      const site = { ...newSite, id: `s${Date.now()}` };
+      const site = { ...newSite, id: Date.now() };
       return site;
     },
     onSuccess: () => {
@@ -44,7 +44,7 @@ export const useUpdateSite = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<Site> }): Promise<Site> => {
+    mutationFn: async ({ id, data }: { id: number; data: Partial<Site> }): Promise<Site> => {
       await delay(500);
       const site = mockSites.find(s => s.id === id);
       if (!site) throw new Error('Site non trouvé');
@@ -60,7 +60,7 @@ export const useDeleteSite = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async (id: string): Promise<void> => {
+    mutationFn: async (id: number): Promise<void> => {
       await delay(500);
       const index = mockSites.findIndex(s => s.id === id);
       if (index === -1) throw new Error('Site non trouvé');

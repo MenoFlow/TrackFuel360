@@ -28,9 +28,9 @@ export class OfflineService {
   }
 
   // Gestion des pleins hors-ligne
-  static savePleinOffline(plein: any): string {
+  static savePleinOffline(plein: any): number {
     const storage = this.getStorage();
-    const tempId = `temp_p_${Date.now()}`;
+    const tempId = Date.now();
     const offlinePlein = {
       ...plein,
       id: tempId,
@@ -68,9 +68,9 @@ export class OfflineService {
   }
 
   // Gestion des trajets hors-ligne
-  static saveTrajetOffline(trajet: any): string {
+  static saveTrajetOffline(trajet: any): number {
     const storage = this.getStorage();
-    const tempId = `temp_t_${Date.now()}`;
+    const tempId = Date.now();
     const offlineTrajet = {
       ...trajet,
       id: tempId,

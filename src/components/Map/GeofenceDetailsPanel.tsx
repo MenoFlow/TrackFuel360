@@ -14,7 +14,7 @@ interface GeofenceDetailsPanelProps {
   isEditing: boolean;
   isReadOnly: boolean;
   onEdit: (geofence: Geofence) => void;
-  onDelete: (id: string) => Promise<void>;
+  onDelete: (id: number) => Promise<void>;
   onClose: () => void;
 }
 

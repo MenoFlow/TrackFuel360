@@ -40,8 +40,8 @@ const Alertes = () => {
   const [deletingAllAlerts, setDeletingAllAlerts] = useState(false);
   const itemsPerPage = 5;
 
-  const getVehiculeImmat = (vehiculeId: string) => {
-    return vehicules?.find(v => v.immatriculation === vehiculeId)?.immatriculation || vehiculeId;
+  const getVehiculeImmat = (vehiculeId: number) => {
+    return vehicules?.find(v => v.id === vehiculeId)?.immatriculation || vehiculeId;
   };
 
   const getPleinIdForAlerte = (alerte: any) => {
@@ -82,7 +82,7 @@ const Alertes = () => {
   const filteredAlertes = alertes?.filter(a => {
     if (typeFilter !== 'all' && a.type !== typeFilter) return false;
     if (statusFilter !== 'all' && a.status !== statusFilter) return false;
-    if (vehiculeFilter !== 'all' && a.vehicule_id !== vehiculeFilter) return false;
+    if (vehiculeFilter !== 'all' && (a.vehicule_id).toString() !== vehiculeFilter) return false;
     if (scoreFilter !== 'all') {
       if (scoreFilter === 'high' && a.score < 80) return false;
       if (scoreFilter === 'medium' && (a.score < 60 || a.score >= 80)) return false;

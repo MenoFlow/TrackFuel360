@@ -36,7 +36,7 @@ export function calculerDashboardStats(
   let totalDistanceFlotte = 0;
   
   vehicules.filter(v => v.actif).forEach(vehicule => {
-    const trajetsVehicule = trajetsMois.filter(t => t.vehicule_id === vehicule.immatriculation);
+    const trajetsVehicule = trajetsMois.filter(t => t.vehicule_id === vehicule.id);
     
     trajetsVehicule.forEach(trajet => {
       const niveauAvant = niveauxCarburant.find(
@@ -46,18 +46,15 @@ export function calculerDashboardStats(
         n => n.trajet_id === trajet.id && n.type === 'apres_trajet'
       );
       
-      
       if (niveauAvant && niveauApres) {
         const carburantConsomme = niveauAvant.niveau - niveauApres.niveau;
         const pleinsTrajet = pleins.filter(p => 
-          p.vehicule_id === vehicule.immatriculation &&
+          p.vehicule_id === vehicule.id &&
           new Date(p.date) >= new Date(trajet.date_debut) &&
           new Date(p.date) <= new Date(trajet.date_fin)
         );
         const totalPleinsTrajet = pleinsTrajet.reduce((sum, p) => sum + p.litres, 0);
 
-        
-        
         totalCarburantFlotte += carburantConsomme + totalPleinsTrajet;
         totalDistanceFlotte += trajet.distance_km;
       }

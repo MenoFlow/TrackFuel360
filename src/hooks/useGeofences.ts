@@ -81,7 +81,7 @@ export function useGeofences() {
    * - Affiche un toast de confirmation
    */
   const updateMutation = useMutation({
-    mutationFn: ({ id, updates }: { id: string; updates: Partial<Geofence> }) =>
+    mutationFn: ({ id, updates }: { id: number; updates: Partial<Geofence> }) =>
       updateGeofenceAPI(id, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['geofences'] });
@@ -139,7 +139,7 @@ export function useGeofences() {
     return createMutation.mutateAsync(geofence);
   }, [createMutation]);
 
-  const updateGeofence = useCallback((id: string, updates: Partial<Geofence>) => {
+  const updateGeofence = useCallback((id: number, updates: Partial<Geofence>) => {
     // Mettre à jour les states de sélection si nécessaire
     if (selectedGeofence?.id === id) {
       setSelectedGeofence((prev) => prev ? { ...prev, ...updates } : null);
@@ -151,7 +151,7 @@ export function useGeofences() {
     return updateMutation.mutateAsync({ id, updates });
   }, [updateMutation, selectedGeofence, editingGeofence]);
 
-  const deleteGeofence = useCallback((id: string) => {
+  const deleteGeofence = useCallback((id: number) => {
     return deleteMutation.mutateAsync(id);
   }, [deleteMutation]);
 

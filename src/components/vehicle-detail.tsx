@@ -22,7 +22,7 @@ import { MainLayout } from "./Layout/MainLayout";
 export default function VehicleDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const vehicle = getVehiculeById(id || "");
+  const vehicle = getVehiculeById(parseInt(id) || null);
   const [showOcrDemo, setShowOcrDemo] = React.useState(false);
 
   if (!vehicle) {
@@ -38,8 +38,8 @@ export default function VehicleDetail() {
     );
   }
 
-  const trips = getTripsByVehicleId(vehicle.immatriculation);
-  const refuels = getRefuelsByVehicleId(vehicle.immatriculation);
+  const trips = getTripsByVehicleId(vehicle.id);
+  const refuels = getRefuelsByVehicleId(vehicle.id);
 
   // Mock OCR data for demonstration
   const mockOcrData = {
@@ -48,14 +48,6 @@ export default function VehicleDetail() {
     field: "Volume (L)",
     confidence: 87,
     photoUrl: "https://images.unsplash.com/photo-1628618916319-53b6de8aa77a?w=400"
-  };
-
-  const handleFillSubmit = (fillData: FillData) => {
-    console.log('New fill submitted:', fillData);
-    toast({
-      title: "Plein enregistré",
-      description: `${fillData.volume}L ajoutés avec succès`,
-    });
   };
 
   const fuelRemaining = calculateFuelRemaining(vehicle);

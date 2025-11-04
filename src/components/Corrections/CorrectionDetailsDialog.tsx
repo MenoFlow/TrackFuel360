@@ -25,8 +25,8 @@ interface CorrectionDetailsDialogProps {
   plein?: Plein;
   vehicule?: Vehicule;
   validationResult?: ValidationResult;
-  onValidate: (correctionId: string, comment: string) => void;
-  onReject: (correctionId: string, comment: string) => void;
+  onValidate: (correctionId: number, comment: string) => void;
+  onReject: (correctionId: number, comment: string) => void;
   isLoading?: boolean;
 }
 

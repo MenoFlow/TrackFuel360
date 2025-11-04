@@ -4,7 +4,7 @@ import { mockPleinExifMetadata } from '@/lib/data/mockData.fuel';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const usePleinMetadata = (pleinId?: string) => {
+export const usePleinMetadata = (pleinId?: number) => {
   return useQuery({
     queryKey: pleinId ? ['plein-metadata', pleinId] : ['plein-metadata'],
     queryFn: async (): Promise<PleinExifMetadata | PleinExifMetadata[] | null> => {

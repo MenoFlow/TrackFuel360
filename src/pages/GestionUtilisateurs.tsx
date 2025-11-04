@@ -122,7 +122,7 @@ const GestionUtilisateurs = () => {
 
   const filteredUsers = users?.filter(u => {
     if (roleFilter !== 'all' && u.role !== roleFilter) return false;
-    if (siteFilter !== 'all' && u.site_id !== siteFilter) return false;
+    if (siteFilter !== 'all' && (u.site_id).toString() !== siteFilter) return false;
     return true;
   });
 
@@ -200,7 +200,7 @@ const GestionUtilisateurs = () => {
                   <SelectContent>
                     <SelectItem value="all">{t('common.all')}</SelectItem>
                     {sites?.map(s => (
-                      <SelectItem key={s.id} value={s.id}>{s.nom}</SelectItem>
+                      <SelectItem key={s.id} value={(s.id).toString()}>{s.nom}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

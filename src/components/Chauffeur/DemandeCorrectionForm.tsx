@@ -28,7 +28,7 @@ export default function DemandeCorrectionForm() {
   const isOnline = useOnlineStatus();
 
   const [type, setType] = useState<'plein' | 'trajet'>('plein');
-  const [itemId, setItemId] = useState('');
+  const [itemId, setItemId] = useState(null);
   const [justification, setJustification] = useState('');
 
   if (!currentUser) return null;
@@ -48,7 +48,7 @@ export default function DemandeCorrectionForm() {
         new_value: justification,
         status: 'pending',
         comment: justification,
-        requested_by: currentUser?.id || '',
+        requested_by: currentUser?.id || null,
       });
 
       toast({
@@ -112,13 +112,13 @@ export default function DemandeCorrectionForm() {
                   <SelectContent>
                     {type === 'plein' ? (
                       mesPleins.map((plein) => (
-                        <SelectItem key={plein.id} value={plein.id}>
+                        <SelectItem key={plein.id} value={(plein.id).toString()}>
                           {new Date(plein.date).toLocaleDateString('fr-FR')} - {plein.litres}L - {plein.station || t('driver.unknownStation')}
                         </SelectItem>
                       ))
                     ) : (
                       mesTrajets.map((trajet) => (
-                        <SelectItem key={trajet.id} value={trajet.id}>
+                        <SelectItem key={trajet.id} value={(trajet.id).toString()}>
                           {new Date(trajet.date_debut).toLocaleDateString('fr-FR')} - {trajet.distance_km}km
                         </SelectItem>
                       ))

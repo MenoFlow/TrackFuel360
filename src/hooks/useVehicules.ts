@@ -75,7 +75,7 @@ export const useCreateVehicule = () => {
       // return response.json();
       
       await delay(500);
-      const vehicule = { ...newVehicule, id: `v${Date.now()}` };
+      const vehicule = { ...newVehicule, id: Date.now() };
       return vehicule;
     },
     onSuccess: () => {
@@ -96,7 +96,7 @@ export const useUpdateVehicule = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<Vehicule> }): Promise<Vehicule> => {
+    mutationFn: async ({ id, data }: { id: number; data: Partial<Vehicule> }): Promise<Vehicule> => {
       // TODO: Remplacer par un vrai appel API
       // const response = await fetch(`${API_BASE_URL}/${id}`, {
       //   method: 'PUT',
@@ -107,7 +107,7 @@ export const useUpdateVehicule = () => {
       // return response.json();
       
       await delay(500);
-      const vehicule = mockVehicules.find(v => v.immatriculation === id);
+      const vehicule = mockVehicules.find(v => v.id === id);
       if (!vehicule) throw new Error('Véhicule non trouvé');
       return { ...vehicule, ...data };
     },

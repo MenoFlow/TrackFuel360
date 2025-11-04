@@ -97,11 +97,11 @@ function genererRapportMensuel(
   filtres: RapportFilters
 ) {
   const donnees = vehicules
-    .filter(v => !filtres.vehicule_id || v.immatriculation === filtres.vehicule_id)
+    .filter(v => !filtres.vehicule_id || v.id === filtres.vehicule_id)
     .filter(v => !filtres.site_id || v.site_id === filtres.site_id)
     .map(vehicule => {
-      const trajetsVehicule = trajets.filter(t => t.vehicule_id === vehicule.immatriculation);
-      const pleinsVehicule = pleins.filter(p => p.vehicule_id === vehicule.immatriculation);
+      const trajetsVehicule = trajets.filter(t => t.vehicule_id === vehicule.id);
+      const pleinsVehicule = pleins.filter(p => p.vehicule_id === vehicule.id);
       
       const totalLitres = pleinsVehicule.reduce((sum, p) => sum + p.litres, 0);
       const totalCout = pleinsVehicule.reduce((sum, p) => sum + (p.litres * p.prix_unitaire), 0);
@@ -109,7 +109,7 @@ function genererRapportMensuel(
       const nbPleins = pleinsVehicule.length;
       
       const consommationMoyenne = totalDistance > 0 
-        ? calculerConsommationMoyenne(vehicule.immatriculation, 30, trajets, mockNiveauxCarburant, pleins)
+        ? calculerConsommationMoyenne(vehicule.id, 30, trajets, mockNiveauxCarburant, pleins)
         : 0;
       
       const coutParKm = totalDistance > 0 ? totalCout / totalDistance : 0;
@@ -117,7 +117,7 @@ function genererRapportMensuel(
       const site = sites.find(s => s.id === vehicule.site_id);
 
       return {
-        immatriculation: vehicule.immatriculation,
+        immatriculation: vehicule.id,
         modele: vehicule.modele,
         site: site?.nom || 'N/A',
         nb_trajets: trajetsVehicule.length,
@@ -156,10 +156,10 @@ function genererRapportTopEcarts(
   filtres: RapportFilters
 ) {
   const donnees = vehicules
-    .filter(v => !filtres.vehicule_id || v.immatriculation === filtres.vehicule_id)
+    .filter(v => !filtres.vehicule_id || v.id === filtres.vehicule_id)
     .map(vehicule => {
       const consommationMoyenne = calculerConsommationMoyenne(
-        vehicule.immatriculation, 30, trajets, mockNiveauxCarburant, pleins
+        vehicule.id, 30, trajets, mockNiveauxCarburant, pleins
       );
       
       const ecartPourcentage = vehicule.consommation_nominale > 0
@@ -168,13 +168,13 @@ function genererRapportTopEcarts(
       
       const ecartAbsolu = consommationMoyenne - vehicule.consommation_nominale;
       
-      const trajetsVehicule = trajets.filter(t => t.vehicule_id === vehicule.immatriculation);
-      const pleinsVehicule = pleins.filter(p => p.vehicule_id === vehicule.immatriculation);
+      const trajetsVehicule = trajets.filter(t => t.vehicule_id === vehicule.id);
+      const pleinsVehicule = pleins.filter(p => p.vehicule_id === vehicule.id);
       const totalDistance = trajetsVehicule.reduce((sum, t) => sum + t.distance_km, 0);
       const totalLitres = pleinsVehicule.reduce((sum, p) => sum + p.litres, 0);
 
       return {
-        immatriculation: vehicule.immatriculation,
+        immatriculation: vehicule.id,
         modele: vehicule.modele,
         consommation_nominale: vehicule.consommation_nominale,
         consommation_reelle: Number(consommationMoyenne.toFixed(1)),
@@ -209,7 +209,7 @@ function genererRapportAnomalies(
   filtres: RapportFilters
 ) {
   const donnees = alertes.map(alerte => {
-    const vehicule = vehicules.find(v => v.immatriculation === alerte.vehicule_id);
+    const vehicule = vehicules.find(v => v.id === alerte.vehicule_id);
     
     return {
       date: format(new Date(alerte.date_detection), 'dd/MM/yyyy HH:mm', { locale: fr }),
@@ -255,8 +255,8 @@ function genererRapportCorrections(
     // Extract vehicule_id from record_id if table is 'plein' or 'trajet'
     const vehiculeId = correction.table === 'vehicule' 
       ? correction.record_id 
-      : vehicules.find(v => v.immatriculation)?.id || 'N/A';
-    const vehicule = vehicules.find(v => v.immatriculation === vehiculeId);
+      : vehicules.find(v => v.id)?.id || 'N/A';
+    const vehicule = vehicules.find(v => v.id === vehiculeId);
     
     return {
       date_proposition: format(new Date(correction.requested_at), 'dd/MM/yyyy HH:mm', { locale: fr }),
@@ -300,10 +300,10 @@ function genererRapportComparaison(
   const donnees = sites.map(site => {
     const vehiculesSite = vehicules.filter(v => v.site_id === site.id);
     const trajetsSite = trajets.filter(t => 
-      vehiculesSite.some(v => v.immatriculation === t.vehicule_id)
+      vehiculesSite.some(v => v.id === t.vehicule_id)
     );
     const pleinsSite = pleins.filter(p => 
-      vehiculesSite.some(v => v.immatriculation === p.vehicule_id)
+      vehiculesSite.some(v => v.id === p.vehicule_id)
     );
     
     const totalLitres = pleinsSite.reduce((sum, p) => sum + p.litres, 0);
