@@ -8,21 +8,19 @@ import { Badge } from "@/components/ui/badge";
 import { FuelProgress } from "@/components/ui/fuel-progress";
 // import { FuelAdjustmentDialog } from "./fuel-adjustment-dialog";
 // import { RefuelDialog } from "./refuel-dialog";
-import { FillForm, FillData } from "./fill-form";
 import { OcrCompare } from "./ocr-compare";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
-import { mockVehicules, getVehiculeById } from "@/lib/mockData";
 import { calculateFuelRemaining, calculateAutonomy, getFuelLevel, getFuelStatus } from "@/lib/fuelCalculations";
-import { getTripsByVehicleId } from "@/lib/mockData";
-import { getRefuelsByVehicleId } from "@/lib/mockData";
 import { cn } from "@/lib/utils";
-import { toast } from "@/hooks/use-toast";
 import { MainLayout } from "./Layout/MainLayout";
+import { usePleins } from "@/hooks/usePleins";
+import { useTrajets } from "@/hooks/useTrajets";
+import { useVehicule } from "@/hooks/useVehicules";
 
 export default function VehicleDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const vehicle = getVehiculeById(parseInt(id) || null);
+  const vehicle = useVehicule(parseInt(id) || null).data;
   const [showOcrDemo, setShowOcrDemo] = React.useState(false);
 
   if (!vehicle) {
@@ -38,8 +36,8 @@ export default function VehicleDetail() {
     );
   }
 
-  const trips = getTripsByVehicleId(vehicle.id);
-  const refuels = getRefuelsByVehicleId(vehicle.id);
+  const trips = useTrajets(vehicle.id).data;
+  const refuels = usePleins(vehicle.id).data;
 
   // Mock OCR data for demonstration
   const mockOcrData = {
@@ -50,10 +48,10 @@ export default function VehicleDetail() {
     photoUrl: "https://images.unsplash.com/photo-1628618916319-53b6de8aa77a?w=400"
   };
 
-  const fuelRemaining = calculateFuelRemaining(vehicle);
-  const autonomy = calculateAutonomy(vehicle);
-  const fuelLevel = getFuelLevel(vehicle);
-  const fuelStatus = getFuelStatus(vehicle);
+  const fuelRemaining = calculateFuelRemaining(vehicle, trips, refuels);
+  const autonomy = calculateAutonomy(vehicle, trips, refuels);
+  const fuelLevel = getFuelLevel(vehicle, trips, refuels);
+  const fuelStatus = getFuelStatus(vehicle, trips, refuels);
   const totalDistance = trips.reduce((sum, trip) => sum + trip.distance_km, 0);
   const fuelConsumed = (vehicle.consommation_nominale / 100) * totalDistance;
 

@@ -4,18 +4,8 @@ import { Parametre, parametresData } from "@/lib/data/mockData.parametres";
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // URL de base de l'API - À configurer selon l'environnement
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
-
-/**
- * Service API pour la gestion des paramètres
- * 
- * BACKEND INTEGRATION:
- * Ces fonctions utilisent actuellement des données mockées.
- * Pour connecter au backend Node.js/Express, il suffit de:
- * 1. Décommenter les appels fetch()
- * 2. Commenter les sections "MOCK DATA"
- * 3. Configurer VITE_API_URL dans .env
- */
+const API_BASE_URL = '/api/parametres';
+//import.meta.env.VITE_API_URL || 
 
 /**
  * Récupère tous les paramètres
@@ -26,13 +16,15 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api"
  */
 export const fetchParametres = async (): Promise<Parametre[]> => {
   // MOCK DATA - Remplacer par l'appel API réel
-  await delay(500);
-  return parametresData;
+  // await delay(500);
+  // console.log(parametresData);
+  // return parametresData;
 
   /* BACKEND INTEGRATION - Décommenter pour utiliser le vrai backend:
+  */
   
   try {
-    const response = await fetch(`${API_BASE_URL}/params`, {
+    const response = await fetch(`${API_BASE_URL}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -46,12 +38,11 @@ export const fetchParametres = async (): Promise<Parametre[]> => {
     }
 
     const result = await response.json();
-    return result.data;
+    return result;
   } catch (error) {
     console.error('Erreur lors de la récupération des paramètres:', error);
     throw error;
   }
-  */
 };
 
 /**
@@ -108,35 +99,20 @@ export const updateParametre = async (id: string, valeur: number): Promise<Param
  * Body: { parametres: Parametre[] }
  * Response: { data: Parametre[], message: string }
  */
-export const saveParametres = async (parametres: Parametre[]): Promise<Parametre[]> => {
-  // MOCK DATA - Remplacer par l'appel API réel
-  await delay(800);
-  return parametres;
+// parametresApi.ts
+export const saveParametres = async (parametres: Parametre[]) => {
+  const response = await fetch('/api/parametres', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ parametres }), // ENVOIE { parametres: [...] }
+  });
 
-  /* BACKEND INTEGRATION - Décommenter pour utiliser le vrai backend:
-  
-  try {
-    const response = await fetch(`${API_BASE_URL}/params`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        // Ajouter token d'authentification si nécessaire:
-        // 'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ parametres }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-    return result.data;
-  } catch (error) {
-    console.error('Erreur lors de la sauvegarde des paramètres:', error);
-    throw error;
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.error || 'Erreur serveur');
   }
-  */
+
+  return response.json();
 };
 
 /**
@@ -148,13 +124,14 @@ export const saveParametres = async (parametres: Parametre[]): Promise<Parametre
  */
 export const resetParametres = async (): Promise<Parametre[]> => {
   // MOCK DATA - Remplacer par l'appel API réel
-  await delay(500);
-  return parametresData;
+  // await delay(500);
+  // console.log(parametresData);
+  // return parametresData;
 
-  /* BACKEND INTEGRATION - Décommenter pour utiliser le vrai backend:
+  /* BACKEND INTEGRATION - Décommenter pour utiliser le vrai backend: */
   
   try {
-    const response = await fetch(`${API_BASE_URL}/params/reset`, {
+    const response = await fetch(`${API_BASE_URL}/reset`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -168,10 +145,10 @@ export const resetParametres = async (): Promise<Parametre[]> => {
     }
 
     const result = await response.json();
-    return result.data;
+    
+    return result;
   } catch (error) {
     console.error('Erreur lors de la réinitialisation des paramètres:', error);
     throw error;
   }
-  */
 };

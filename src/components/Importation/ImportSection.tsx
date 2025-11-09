@@ -9,7 +9,7 @@ import { DATA_TYPES } from "@/types";
 import { parseExcelFile, validateDependencies, validateRequiredFields, validateFieldFormats } from "@/lib/utils/excelUtils";
 import { ImportGuide } from "./ImportGuide";
 import { MotionLayout } from "../Layout/MotionLayout";
-import { mockDataByType } from "@/lib/mockData";
+import { useAggregatedData } from "@/lib/mockData";
 import { useTranslation } from "react-i18next";
 
 interface PreviewRow {
@@ -22,6 +22,36 @@ interface PreviewRow {
 }
 
 export const ImportSection = () => {
+  const {
+    users,
+    vehicules,
+    sites,
+    affectations,
+    corrections,
+    params,
+    trajets,
+    traceGPSPoints,
+    pleins,
+    niveauxCarburant,
+    pleinExifMetadata,
+    geofences,
+  } = useAggregatedData();
+
+  const dataByType: Record<string, any[]> = {
+    Site: sites,
+    Geofence: geofences,
+    User: users,
+    Vehicule: vehicules,
+    Affectation: affectations,
+    Trip: trajets,
+    TraceGps: traceGPSPoints,
+    Plein: pleins,
+    PleinExifMetadata: pleinExifMetadata,
+    NiveauCarburant: niveauxCarburant,
+    Parametre: [params],
+    Correction: corrections,
+  };
+  
   const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const [previewData, setPreviewData] = useState<PreviewRow[]>([]);
@@ -45,7 +75,7 @@ export const ImportSection = () => {
       const previewRows: PreviewRow[] = [];
       let rowId = 1;
 
-      const existingData = { ...mockDataByType };
+      const existingData = { ...dataByType };
 
       for (const [sheetName, rows] of Object.entries(parsedData)) {
         const typeConfig = DATA_TYPES.find((t) => t.value === sheetName);

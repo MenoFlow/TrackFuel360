@@ -13,7 +13,7 @@ import i18n from "@/i18n/config";
  * Hook to fetch trips for a specific vehicle
  * Automatically refetches when vehiculeId changes
  */
-export function useTrips(vehiculeId: string) {
+export function useTrips(vehiculeId: number) {
   return useQuery({
     queryKey: ["trips", vehiculeId],
     queryFn: () => fetchTrips(vehiculeId),
@@ -54,7 +54,7 @@ export function useUpdateTrip() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: TripInput }) => 
+    mutationFn: ({ id, data }: { id: number; data: TripInput }) => 
       updateTrip(id, data),
     onSuccess: (updatedTrip) => {
       // Invalidate and refetch trips for this vehicle
@@ -80,11 +80,11 @@ export function useDeleteTrip() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, vehiculeId }: { id: string; vehiculeId: string }) => 
+    mutationFn: ({ id, id_vehicule }: { id: number; id_vehicule: number }) => 
       deleteTrip(id),
     onSuccess: (_, variables) => {
       // Invalidate and refetch trips for this vehicle
-      queryClient.invalidateQueries({ queryKey: ["trips", variables.vehiculeId] });
+      queryClient.invalidateQueries({ queryKey: ["trips", variables.id_vehicule] });
       
       toast.success(i18n.t('trips.deleted'));
     },

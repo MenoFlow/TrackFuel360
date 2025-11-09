@@ -310,7 +310,11 @@ const CorrectionDetailsDialog = ({
                     <Button
                       onClick={() => {
                         setActionType('validate');
-                        if (comment.trim()) handleAction();
+                        if (comment.trim()) {
+                          onValidate(correction.id, comment);
+                          setComment('');
+                          setActionType(null);
+                        }
                       }}
                       disabled={isLoading}
                       className="flex-1 bg-green-600 hover:bg-green-700"
@@ -321,7 +325,12 @@ const CorrectionDetailsDialog = ({
                     <Button
                       onClick={() => {
                         setActionType('reject');
-                        if (comment.trim()) handleAction();
+                        // Appelle DIRECTEMENT si déjà un commentaire
+                        if (comment.trim()) {
+                          onReject(correction.id, comment);
+                          setComment('');
+                          setActionType(null);
+                        }
                       }}
                       disabled={isLoading}
                       variant="destructive"

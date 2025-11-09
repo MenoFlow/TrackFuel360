@@ -17,7 +17,10 @@ export default function RapportExport() {
   const [expiresAt, setExpiresAt] = useState<number>(0);
 
   useEffect(() => {
+    console.log('[RapportExport] Initialisation avec token:', token);
+    
     if (!token) {
+      console.error('[RapportExport] Token manquant');
       setIsValid(false);
       return;
     }
@@ -27,18 +30,26 @@ export default function RapportExport() {
       const decoded = atob(token);
       const [id, fmt, expiration] = decoded.split(':');
       
+      console.log('[RapportExport] Token décodé:', { id, format: fmt, expiration });
+      
       // Vérifier l'expiration
       const expirationTime = parseInt(expiration, 10);
-      if (Date.now() > expirationTime) {
+      const now = Date.now();
+      
+      if (now > expirationTime) {
+        const expired = new Date(expirationTime).toISOString();
+        console.error('[RapportExport] Token expiré:', { expiresAt: expired, now: new Date(now).toISOString() });
         setIsValid(false);
         return;
       }
 
+      console.log('[RapportExport] Token valide, temps restant:', Math.floor((expirationTime - now) / 1000 / 60), 'minutes');
+      
       setRapportId(id);
       setFormat(fmt as FormatExport);
       setExpiresAt(expirationTime);
     } catch (error) {
-      console.error('Erreur de décodage du token:', error);
+      console.error('[RapportExport] Erreur de décodage du token:', error);
       setIsValid(false);
     }
   }, [token]);
@@ -47,22 +58,43 @@ export default function RapportExport() {
   const [pdfUrl, setPdfUrl] = useState<string>('');
 
   // Générer le PDF et l'afficher
-  // useEffect(() => {
-  //   if (rapport) {
-      // Générer le blob PDF directement
-      // const blob = exporterRapport(rapport, format);
-      // if (blob) {
-      //   const url = URL.createObjectURL(blob);
-      //   setPdfUrl(url);
-        
-      //   // Nettoyer l'URL quand le composant est démonté
-      //   return () => URL.revokeObjectURL(url);
-      // }
-  //   }
-  // }, [rapport, format]);
+  useEffect(() => {
+    if (rapport) {
+      console.log('[RapportExport] Génération du fichier:', { 
+        rapportId: rapport.metadata.id, 
+        format,
+        titre: rapport.metadata.titre 
+      });
+      
+      try {
+        // Générer le blob PDF directement
+        const blob = exporterRapport(rapport, format, true);
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          setPdfUrl(url);
+          console.log('[RapportExport] Fichier généré avec succès, taille:', blob.size, 'bytes');
+          
+          // Nettoyer l'URL quand le composant est démonté
+          return () => {
+            console.log('[RapportExport] Nettoyage URL blob');
+            URL.revokeObjectURL(url);
+          };
+        } else {
+          console.error('[RapportExport] Échec génération blob');
+        }
+      } catch (error) {
+        console.error('[RapportExport] Erreur génération fichier:', error);
+      }
+    }
+  }, [rapport, format]);
 
   const handleDownload = () => {
     if (rapport) {
+      console.log('[RapportExport] Déclenchement téléchargement:', {
+        rapportId: rapport.metadata.id,
+        format,
+        titre: rapport.metadata.titre
+      });
       exporterRapport(rapport, format);
     }
   };

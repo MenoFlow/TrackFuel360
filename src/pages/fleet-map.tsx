@@ -1,16 +1,17 @@
 import * as React from "react";
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, Popup, Polyline } from "react-leaflet";
 import type { LatLngExpression } from "leaflet";
-import { divIcon, LatLng } from "leaflet";
+import { divIcon } from "leaflet";
 import { Vehicule, Trajet } from "@/types";
 import { getFuelStatus, calculateFuelRemaining } from "@/lib/fuelCalculations";
-import { getTripsByVehicleId } from "@/lib/mockData";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Fuel, Navigation, Route, MapPin } from "lucide-react";
 import "leaflet/dist/leaflet.css";
 import { motion } from "framer-motion";
+import { useTrajets } from "@/hooks/useTrajets";
+import { usePleins } from "@/hooks/usePleins";
 
 
 interface FleetMapProps {
@@ -127,6 +128,13 @@ export const FleetMap: React.FC<FleetMapProps> = ({ vehicles, onVehicleSelect })
   const [showTrips, setShowTrips] = React.useState(false);
   const [vehicleTrips, setVehicleTrips] = React.useState<Trajet[]>([]);
 
+  // CHARGE TOUS LES TRAJETS UNE SEULE FOIS
+  const allTrips = useTrajets().data || [];
+  const allRefuels = usePleins().data || [];
+
+  const trips = useTrajets(selectedVehicle?.id).data;
+  const refuels = usePleins(selectedVehicle?.id).data;
+
   const vehiclesWithPositions = React.useMemo<VehicleWithPosition[]>(() => 
     vehicles.map(vehicle => ({
       ...vehicle,
@@ -144,7 +152,6 @@ export const FleetMap: React.FC<FleetMapProps> = ({ vehicles, onVehicleSelect })
 
   const handleShowTrips = () => {
     if (selectedVehicle) {
-      const trips = getTripsByVehicleId(selectedVehicle.id);
       // Ajouter des traces GPS simulées si elles n'existent pas
       const tripsWithGps = trips.map(trip => {
         // if (!trip.traceGps || trip.traceGps.length === 0) {
@@ -159,7 +166,6 @@ export const FleetMap: React.FC<FleetMapProps> = ({ vehicles, onVehicleSelect })
       setShowTrips(true);
     }
   };
-
 
   return (
     <Card className="rounded-2xl overflow-hidden border-0 shadow-lg">
@@ -186,10 +192,10 @@ export const FleetMap: React.FC<FleetMapProps> = ({ vehicles, onVehicleSelect })
 
             {/* Afficher les véhicules */}
             {vehiclesWithPositions.map((vehicle) => {
-              const fuelStatus = getFuelStatus(vehicle);
-              const remainingFuel = calculateFuelRemaining(vehicle);
+              const fuelStatus = getFuelStatus(vehicle, trips, refuels);
+              const remainingFuel = calculateFuelRemaining(vehicle, trips, refuels);
               const autonomy = remainingFuel / vehicle.consommation_nominale * 100;
-              const tripsData = getTripsByVehicleId(vehicle.id);
+              const tripsData = allTrips.filter(t => t.vehicule_id === vehicle.id);
 
               // Sélection du dernier trajet
               const lastTrip = tripsData && tripsData.length > 0 ? tripsData[tripsData.length - 1] : null;
@@ -272,7 +278,7 @@ export const FleetMap: React.FC<FleetMapProps> = ({ vehicles, onVehicleSelect })
 
             {/* Afficher les trajets si activé */}
             {showTrips && selectedVehicle && vehicleTrips.map((trip, idx) => {
-              const fuelStatus = getFuelStatus(selectedVehicle);
+              const fuelStatus = getFuelStatus(selectedVehicle, trips, refuels);
               const color = getPolylineColor(fuelStatus);
               
               if (!trip.traceGps || trip.traceGps.length === 0) {

@@ -1,6 +1,5 @@
 import * as XLSX from 'xlsx';
 import { DATA_TYPES } from '@/types';
-import { mockDataByType } from '../mockData';
 
 export interface ExportHistory {
   id: string;
@@ -31,11 +30,11 @@ export const normalizeRowKeys = (row: Record<string, any>): Record<string, any> 
 };
 
 // Génère un fichier Excel stylisé
-export const generateStyledExcelFile = (selectedTypes: string[], format: string): Blob => {
+export const generateStyledExcelFile = (selectedTypes: string[], format: string, dataByType: Record<string, any[]> = {}): Blob => {
   const workbook = XLSX.utils.book_new();
 
   selectedTypes.forEach((type) => {
-    const data = mockDataByType[type as keyof typeof mockDataByType] || [];
+    const data = dataByType[type as keyof typeof dataByType] || [];
     const worksheet = XLSX.utils.json_to_sheet(Array.isArray(data) ? data : [data]);
 
     // Style des en-têtes
@@ -66,7 +65,7 @@ export const generateStyledExcelFile = (selectedTypes: string[], format: string)
     return new Blob([csv], { type: 'text/csv' });
   } else {
     const json = selectedTypes.reduce((acc, type) => {
-      acc[type] = mockDataByType[type as keyof typeof mockDataByType];
+      acc[type] = dataByType[type as keyof typeof dataByType];
       return acc;
     }, {} as Record<string, any>);
     return new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });

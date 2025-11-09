@@ -1,22 +1,26 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plein } from '@/types';
-import { mockPleins } from '@/lib/mockData';
 import { OfflineService } from '@/lib/services/offlineService';
 import { useOnlineStatus } from './useOnlineStatus';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const API_BASE_URL = '/api/pleins';
 
 export const usePleins = (vehiculeId?: number) => {
-  const isOnline = useOnlineStatus();
+  // const isOnline = useOnlineStatus();
 
   return useQuery({
     queryKey: vehiculeId ? ['pleins', vehiculeId] : ['pleins'],
     queryFn: async (): Promise<Plein[]> => {
       // Combiner les données du backend (mockées) avec les données locales
-      await delay(300);
+      // await delay(300);
+      const response = await fetch(`${API_BASE_URL}`);
+      if (!response.ok) throw new Error('Erreur lors de la récupération des utilisateurs');
+
+      const data = await response.json();
       const serverPleins = vehiculeId 
-        ? mockPleins.filter(p => p.vehicule_id === vehiculeId)
-        : mockPleins;
+        ? data.filter(p => p.vehicule_id === vehiculeId)
+        : data;
       
       // Ajouter les pleins stockés localement (hors-ligne)
       const offlinePleins = OfflineService.getPleinsOffline();
@@ -29,32 +33,41 @@ export const usePleins = (vehiculeId?: number) => {
   });
 };
 
+// src/hooks/usePleins.ts
 export const useCreatePlein = () => {
   const queryClient = useQueryClient();
   const isOnline = useOnlineStatus();
-  
+
   return useMutation({
     mutationFn: async (newPlein: Omit<Plein, 'id'>): Promise<Plein> => {
       if (!isOnline) {
-        // Mode hors-ligne : sauvegarder localement
-        console.log('📴 Offline mode: saving plein locally');
         const tempId = OfflineService.savePleinOffline(newPlein);
         return { ...newPlein, id: tempId } as Plein;
       }
 
-      // Mode en ligne : envoyer au backend (simulé pour l'instant)
-      await delay(500);
-      const plein = { ...newPlein, id: Date.now() };
-      
-      // TODO: Remplacer par un vrai appel API
-      // const response = await fetch('/api/pleins', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(newPlein),
-      // });
-      // return await response.json();
-      
-      return plein;
+      const formData = new FormData();
+      Object.entries(newPlein).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(key, value.toString());
+        }
+      });
+      if (newPlein.photo_bon instanceof File) {
+        formData.append('photo_bon', newPlein.photo_bon);
+      }
+
+      const response = await fetch(API_BASE_URL, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        const err = new Error(error.error || 'Erreur serveur');
+        (err as any).details = error; // On garde les détails
+        throw err;
+      }
+
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['pleins'] });

@@ -1,8 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { User } from '@/types';
-import { mockUsers } from '@/lib/mockData';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const API_BASE_URL = '/api/users';
 
 // Simulate current user (for demo purposes)
 let currentUserId = 1; // Default admin
@@ -11,10 +11,10 @@ export const useCurrentUser = () => {
   return useQuery({
     queryKey: ['current-user'],
     queryFn: async (): Promise<User> => {
-      await delay(200);
-      const user = mockUsers.find(u => u.id === currentUserId);
-      if (!user) throw new Error('User not found');
-      return user;
+      const response = await fetch(`${API_BASE_URL}`);
+      if (!response.ok) throw new Error('Erreur lors de la récupération des utilisateurs');
+      const data = await response.json();
+      return data;
     },
   });
 };
@@ -23,48 +23,37 @@ export const useUsers = () => {
   return useQuery({
     queryKey: ['users'],
     queryFn: async (): Promise<User[]> => {
-      await delay(300);
-      return mockUsers;
+
+      const response = await fetch(`${API_BASE_URL}`);
+      if (!response.ok) throw new Error('Erreur lors de la récupération des utilisateurs');
+      const data = await response.json();
+      return data;
     },
   });
 };
 
-export const useUsersBySite = (siteId?: number) => {
-  return useQuery({
-    queryKey: ['users', 'site', siteId],
-    queryFn: async (): Promise<User[]> => {
-      await delay(300);
-      if (!siteId) return mockUsers;
-      return mockUsers.filter(u => u.site_id === siteId);
-    },
-    enabled: !!siteId,
-  });
-};
-
-export const useUsersByRole = (role?: string) => {
-  return useQuery({
-    queryKey: ['users', 'role', role],
-    queryFn: async (): Promise<User[]> => {
-      await delay(300);
-      if (!role) return mockUsers;
-      return mockUsers.filter(u => u.role === role);
-    },
-    enabled: !!role,
-  });
-};
 
 export const useCreateUser = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async (newUser: Omit<User, 'id'>): Promise<User> => {
-      await delay(500);
-      const user: User = {
-        id: Date.now(),
-        ...newUser,
-      };
-      mockUsers.push(user);
-      return user;
+    mutationFn: async (newUser: Omit<User, 'id'> & { password: string }): Promise<User> => {
+      const res = await fetch(API_BASE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...newUser,
+          site_id: newUser.site_id ?? null,
+          password: newUser.password,
+        }),
+      });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Erreur serveur' }));
+        throw new Error(error.error || 'Échec de la création');
+      }
+
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -74,36 +63,69 @@ export const useCreateUser = () => {
 
 export const useUpdateUser = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: Partial<User> }): Promise<User> => {
-      await delay(500);
-      const index = mockUsers.findIndex(u => u.id === id);
-      if (index === -1) throw new Error('User not found');
-      
-      const updatedUser = { ...mockUsers[index], ...data };
-      mockUsers[index] = updatedUser;
-      return updatedUser;
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: Partial<User> & { password?: string };
+    }): Promise<User> => {
+      const res = await fetch(`${API_BASE_URL}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => (console.log(333)));
+        throw new Error(error.error );
+      }
+
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['current-user'] });
     },
+    onError: (error: Error) => {
+    },
   });
 };
 
+// src/hooks/useDeleteUser.ts
 export const useDeleteUser = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (id: number): Promise<void> => {
-      await delay(500);
-      const index = mockUsers.findIndex(u => u.id === id);
-      if (index === -1) throw new Error('User not found');
-      mockUsers.splice(index, 1);
+      const res = await fetch(`${API_BASE_URL}/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (res.status === 404) {
+        throw new Error('Utilisateur non trouvé');
+      }
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Erreur serveur' }));
+        throw new Error(error.error || 'Échec de la suppression');
+      }
+
+      // 204 No Content = succès
+      return;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['current-user'] }); // si besoin
+    },
+    onError: (error: Error) => {
+      // Tu peux ajouter un toast ici si tu veux
+      console.error('Suppression échouée:', error.message);
     },
   });
 };

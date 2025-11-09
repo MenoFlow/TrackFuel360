@@ -67,8 +67,8 @@ interface GPSPoint {
 
 // --- Main component ---
 export default function ManualTripEntryMap() {
-  const { vehiculeId } = useParams();
-
+  let { vehiculeId } = useParams();
+  const id_vehicule = parseInt(vehiculeId);
   const { t } = useTranslation();
   const [departure, setDeparture] = useState<GPSPoint | null>(null);
   const [arrival, setArrival] = useState<GPSPoint | null>(null);
@@ -77,22 +77,23 @@ export default function ManualTripEntryMap() {
   const [distanceKm, setDistanceKm] = useState<number | null>(null);
   const [tStart, setTStart] = useState(toISOLocal(new Date().toISOString()));
   const [tEnd, setTEnd] = useState(toISOLocal(new Date().toISOString()));
-  const [chauffeurId, setChauffeurId] = useState("u1");
+  const [chauffeurId, setChauffeurId] = useState(null);
   const [odometreDebut, setOdometreDebut] = useState(0);
   const [odometreFin, setOdometreFin] = useState(0);
   const typeSaisie = "manuelle";
-  const [editingTripId, setEditingTripId] = useState<string | null>(null);
+  const [editingTripId, setEditingTripId] = useState<number | null>(null);
   const [showSidePanel, setShowSidePanel] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
   const featureGroupRef = useRef<L.FeatureGroup<any>>(new L.FeatureGroup());
 
   // React Query hooks
-  const { data: trips = [], isLoading: isLoadingTrips } = useTrips(vehiculeId);
+  const { data: trips = [], isLoading: isLoadingTrips } = useTrips(id_vehicule);
   const createTripMutation = useCreateTrip();
   const updateTripMutation = useUpdateTrip();
   const deleteTripMutation = useDeleteTrip();
 
-  const tripFilter = trips.filter((trip) => trip.vehicule_id === vehiculeId)
+
+  const tripFilter = trips.filter((trip) => trip.vehicule_id === id_vehicule)
 
   // Compute distance when both points are present
   useEffect(() => {
@@ -145,11 +146,10 @@ export default function ManualTripEntryMap() {
       return;
     }
 
-    const tripId = editingTripId || `t${Date.now()}`;
-    const now = new Date().toISOString();
+    const tripId = editingTripId || Date.now();
     
     const tripData: TripInput = {
-      vehicule_id: vehiculeId,
+      vehicule_id: id_vehicule,
       chauffeur_id: chauffeurId,
       date_debut: new Date(tStart).toISOString(),
       date_fin: new Date(tEnd).toISOString(),
@@ -157,7 +157,6 @@ export default function ManualTripEntryMap() {
       type_saisie: typeSaisie,
       traceGps: [
         {
-          id: `gps${Date.now()}_1`,
           trajet_id: tripId,
           sequence: 1,
           latitude: departure.lat,
@@ -165,7 +164,6 @@ export default function ManualTripEntryMap() {
           timestamp: new Date(tStart).toISOString(),
         },
         {
-          id: `gps${Date.now()}_2`,
           trajet_id: tripId,
           sequence: 2,
           latitude: arrival.lat,
@@ -215,8 +213,8 @@ export default function ManualTripEntryMap() {
   }
 
   // Handle trip deletion
-  function handleDeleteTrip(id: string) {
-    deleteTripMutation.mutate({ id, vehiculeId });
+  function handleDeleteTrip(id: number) {
+    deleteTripMutation.mutate({ id, id_vehicule });
   }
 
   function MapEvents({ onReady }: { onReady: (map: L.Map) => void }) {
@@ -256,14 +254,14 @@ export default function ManualTripEntryMap() {
                     {t('trips.tripsButton')}
                     {!isLoadingTrips && trips.length > 0 && (
                       <span className="ml-2 bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs">
-                        {trips.filter((t) => t.vehicule_id === vehiculeId).length}
+                        {trips.filter((t) => t.vehicule_id === id_vehicule).length}
                       </span>
                     )}
                   </Button>
                 </div>
               )}
               <MobileTripDialog
-                vehiculeId={vehiculeId}
+                vehiculeId={id_vehicule}
                 trips={trips}
                 isLoading={isLoadingTrips}
                 onEdit={startEditTrip}
@@ -296,8 +294,8 @@ export default function ManualTripEntryMap() {
                       {showInfo.isVisible === false ? (
                         <>
                           <strong>{t('trips.departure')}</strong>
-                          <div>{t('trips.latitude')}: {departure.lat.toFixed(6)}</div>
-                          <div>{t('trips.longitude')}: {departure.lon.toFixed(6)}</div>
+                          <div>{t('trips.latitude')}: {Number(departure.lat).toFixed(6)}</div>
+                          <div>{t('trips.longitude')}: {Number(departure.lon).toFixed(6)}</div>
                           <div style={{ marginTop: 8 }}>
                             <button
                               className="bg-primary hover:bg-primary/90 text-primary-foreground py-1 px-3 rounded shadow text-sm"
@@ -442,7 +440,7 @@ export default function ManualTripEntryMap() {
 
             {(true) && (
               <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
-                <h4 className="text-sm font-medium mb-3">{t('trips.vehicleTrips')} {vehiculeId}</h4>
+                <h4 className="text-sm font-medium mb-3">{t('trips.vehicleTrips')} {id_vehicule}</h4>
 
                 {isLoadingTrips ? (
                   <div className="flex items-center justify-center py-8">
@@ -460,7 +458,7 @@ export default function ManualTripEntryMap() {
                     }}
                   >
                     {trips
-                      .filter((trip) => trip.vehicule_id === vehiculeId)
+                      .filter((trip) => trip.vehicule_id === id_vehicule)
                       .map((trip) => (
                         <div
                           key={trip.id}

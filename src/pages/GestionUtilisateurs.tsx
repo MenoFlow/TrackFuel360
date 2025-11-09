@@ -73,15 +73,15 @@ const GestionUtilisateurs = () => {
     }
   }
 
-  const handleCreateUser = async (data: Omit<User, 'id'>) => {
-    try {
-      await createUser.mutateAsync(data);
-      toast.success(t('success.userCreated'));
-      setIsFormOpen(false);
-    } catch (error) {
-      toast.error(t('errors.userCreation'));
-    }
-  };
+const handleCreateUser = async (data: Omit<User, 'id'> & { password: string }) => {
+  try {
+    await createUser.mutateAsync(data);
+    toast.success(t('success.userCreated'));
+    setIsFormOpen(false);
+  } catch (error) {
+    toast.error(t('errors.userCreation'));
+  }
+};
 
   const handleUpdateUser = async (data: Omit<User, 'id'>) => {
     if (!editingUser) return;
@@ -95,15 +95,18 @@ const GestionUtilisateurs = () => {
     }
   };
 
-  const handleDeleteUser = async () => {
+  const handleDeleteUser = () => {
     if (!deletingUser) return;
-    try {
-      await deleteUser.mutateAsync(deletingUser.id);
-      toast.success(t('success.userDeleted'));
-      setDeletingUser(null);
-    } catch (error) {
-      toast.error(t('errors.userDelete'));
-    }
+  
+    deleteUser.mutate(deletingUser.id, {
+      onSuccess: () => {
+        toast.success(t('success.userDeleted'));
+        setDeletingUser(null);
+      },
+      onError: () => {
+        toast.error(t('errors.userDelete'));
+      },
+    });
   };
 
   const getRoleBadgeVariant = (role: string) => {

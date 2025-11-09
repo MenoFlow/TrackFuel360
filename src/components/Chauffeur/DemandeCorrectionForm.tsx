@@ -8,14 +8,30 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, LogOut } from 'lucide-react';
-import { OfflineSyncIndicator } from '@/components/Chauffeur/OfflineSyncIndicator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import Header from './Header';
+
+// Types (doivent être définis quelque part ou importés)
+type Plein = {
+  id: number;
+  date: string;
+  litres: number;
+  odometre: number;
+  station?: string;
+  chauffeur_id: number;
+};
+
+type Trajet = {
+  id: number;
+  date_debut: string;
+  distance_km: number;
+  chauffeur_id: number;
+};
 
 export default function DemandeCorrectionForm() {
   const { t } = useTranslation();
@@ -28,39 +44,78 @@ export default function DemandeCorrectionForm() {
   const isOnline = useOnlineStatus();
 
   const [type, setType] = useState<'plein' | 'trajet'>('plein');
-  const [itemId, setItemId] = useState(null);
+  const [itemId, setItemId] = useState<string | null>(null);
+  const [champ, setChamp] = useState<'litres' | 'odometre' | 'distance_km'>('litres');
   const [justification, setJustification] = useState('');
+  const [newValue, setNewValue] = useState('');
 
   if (!currentUser) return null;
 
+  // Filtrer les données
   const mesPleins = allPleins ? filterDataForDriver(allPleins) : [];
   const mesTrajets = allTrajets ? filterDataForDriver(allTrajets) : [];
+
+  // Sélectionner l'élément (type-safe)
+  const selectedPlein = type === 'plein' ? mesPleins.find(p => p.id === Number(itemId)) : null;
+  const selectedTrajet = type === 'trajet' ? mesTrajets.find(t => t.id === Number(itemId)) : null;
+
+  // Récupérer oldValue en fonction du type
+  const oldValue = (() => {
+    if (type === 'plein' && selectedPlein) {
+      return champ === 'litres' ? selectedPlein.litres : selectedPlein.odometre;
+    }
+    if (type === 'trajet' && selectedTrajet) {
+      return champ === 'distance_km' ? selectedTrajet.distance_km : null;
+    }
+    return null;
+  })();
+
+  // Réinitialiser les champs
+  const handleTypeChange = (value: 'plein' | 'trajet') => {
+    setType(value);
+    setItemId(null);
+    setChamp(value === 'trajet' ? 'distance_km' : 'litres');
+    setNewValue('');
+  };
+
+  const handleChampChange = (value: 'litres' | 'odometre' | 'distance_km') => {
+    setChamp(value);
+    setNewValue('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const numValue = Number(newValue);
+    if (!itemId || isNaN(numValue) || numValue < 0) {
+      toast({
+        title: t('errors.invalidInput'),
+        description: t('driver.validNumberRequired'),
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       await createCorrection.mutateAsync({
-        table: type === 'plein' ? 'pleins' : 'trajets',
-        record_id: itemId,
-        champ: 'correction_demandee',
-        old_value: justification,
-        new_value: justification,
-        status: 'pending',
+        table: type === 'plein' ? 'pleins' : 'trips',
+        record_id: Number(itemId),
+        champ,
+        old_value: oldValue?.toString() ?? '',
+        new_value: newValue,
         comment: justification,
-        requested_by: currentUser?.id || null,
+        requested_by: currentUser.id,
       });
 
       toast({
         title: isOnline ? t('driver.requestSent') : t('offline.status.savedLocally'),
         description: isOnline ? t('driver.requestSentDesc') : t('offline.willSyncLater'),
       });
-
       navigate('/chauffeur');
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: t('errors.generic'),
-        description: String(error),
+        description: error?.message || String(error),
         variant: 'destructive',
       });
     }
@@ -68,30 +123,26 @@ export default function DemandeCorrectionForm() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <Header currentUser={currentUser} logout={logout} isDashboard={false} />
-
       <div className="mx-12 px-6 py-8">
         <Card>
           <CardHeader>
             <CardTitle>{t('driver.correctionRequestTitle')}</CardTitle>
-            <CardDescription>
-              {t('driver.correctionRequestDesc')}
-            </CardDescription>
+            <CardDescription>{t('driver.correctionRequestDesc')}</CardDescription>
           </CardHeader>
           <CardContent>
             {!isOnline && (
               <Alert className="mb-4">
-                <AlertDescription>
-                  {t('offline.workingOffline')}
-                </AlertDescription>
+                <AlertDescription>{t('offline.workingOffline')}</AlertDescription>
               </Alert>
             )}
+
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Type */}
               <div className="space-y-2">
-                <Label htmlFor="type">{t('driver.correctionType')}</Label>
-                <Select value={type} onValueChange={(v) => setType(v as 'plein' | 'trajet')}>
-                  <SelectTrigger id="type">
+                <Label>{t('driver.correctionType')}</Label>
+                <Select value={type} onValueChange={handleTypeChange}>
+                  <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -101,49 +152,102 @@ export default function DemandeCorrectionForm() {
                 </Select>
               </div>
 
+              {/* Élément */}
               <div className="space-y-2">
-                <Label htmlFor="itemId">
+                <Label>
                   {type === 'plein' ? t('driver.selectFuel') : t('driver.selectTrip')}
                 </Label>
-                <Select value={itemId} onValueChange={setItemId} required>
-                  <SelectTrigger id="itemId">
+                <Select value={itemId || ''} onValueChange={setItemId} required>
+                  <SelectTrigger>
                     <SelectValue placeholder={t('driver.choose')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {type === 'plein' ? (
-                      mesPleins.map((plein) => (
-                        <SelectItem key={plein.id} value={(plein.id).toString()}>
-                          {new Date(plein.date).toLocaleDateString('fr-FR')} - {plein.litres}L - {plein.station || t('driver.unknownStation')}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      mesTrajets.map((trajet) => (
-                        <SelectItem key={trajet.id} value={(trajet.id).toString()}>
-                          {new Date(trajet.date_debut).toLocaleDateString('fr-FR')} - {trajet.distance_km}km
-                        </SelectItem>
-                      ))
-                    )}
+                    {type === 'plein'
+                      ? mesPleins.map((p) => (
+                          <SelectItem key={p.id} value={p.id.toString()}>
+                            {new Date(p.date).toLocaleDateString('fr-FR')} - {p.litres}L
+                          </SelectItem>
+                        ))
+                      : mesTrajets.map((t) => (
+                          <SelectItem key={t.id} value={t.id.toString()}>
+                            {new Date(t.date_debut).toLocaleDateString('fr-FR')} - {t.distance_km}km
+                          </SelectItem>
+                        ))}
                   </SelectContent>
                 </Select>
               </div>
 
+              {/* Champ à corriger */}
+              {itemId && (
+                <div className="space-y-2">
+                  <Label>{t('driver.fieldToCorrect')}</Label>
+                  <Select value={champ} onValueChange={handleChampChange}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {type === 'trajet' ? (
+                        <SelectItem value="distance_km">{t('driver.distanceKm')}</SelectItem>
+                      ) : (
+                        <>
+                          <SelectItem value="litres">{t('driver.liters')}</SelectItem>
+                          <SelectItem value="odometre">{t('driver.odometer')}</SelectItem>
+                        </>
+                      )}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
+              {/* Valeur actuelle */}
+              {itemId && oldValue !== null && (
+                <div className="space-y-2">
+                  <Label>{t('driver.currentValue')}</Label>
+                  <div className="flex items-center gap-3">
+                    <Input value={oldValue} disabled className="bg-muted" />
+                    <span className="text-2xl text-muted-foreground">→</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Nouvelle valeur */}
+              {itemId && (
+                <div className="space-y-2">
+                  <Label>{t('driver.newValue')}</Label>
+                  <Input
+                    type="number"
+                    placeholder={t('driver.enterNewValue')}
+                    value={newValue}
+                    onChange={(e) => setNewValue(e.target.value)}
+                    required
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              )}
+
+              {/* Justification */}
               <div className="space-y-2">
-                <Label htmlFor="justification">{t('driver.correctionJustification')}</Label>
+                <Label>{t('driver.correctionJustification')}</Label>
                 <Textarea
-                  id="justification"
                   placeholder={t('driver.correctionJustificationPlaceholder')}
                   value={justification}
                   onChange={(e) => setJustification(e.target.value)}
-                  rows={6}
+                  rows={4}
                   required
                 />
               </div>
 
+              {/* Boutons */}
               <div className="flex gap-3">
                 <Button type="button" variant="outline" onClick={() => navigate('/chauffeur')} className="flex-1">
                   {t('common.cancel')}
                 </Button>
-                <Button type="submit" disabled={createCorrection.isPending} className="flex-1">
+                <Button
+                  type="submit"
+                  disabled={createCorrection.isPending || !itemId || !newValue || oldValue === null}
+                  className="flex-1"
+                >
                   {createCorrection.isPending ? t('driver.sending') : t('driver.sendRequest')}
                 </Button>
               </div>

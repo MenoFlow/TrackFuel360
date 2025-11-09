@@ -81,7 +81,7 @@ export interface User {
 
 export type VehiculeType = 'essence' | 'diesel' | 'hybride' | 'electrique' | 'gpl';
 export interface Vehicule {
-  id: number;
+  id?: number;
   immatriculation: string;
   marque: string;
   modele: string;
@@ -135,6 +135,7 @@ export interface Trajet {
   distance_km: number;
   type_saisie: SaisieType;
   traceGps?: TraceGPSPoint[]; // Optionnel : tableau de points GPS
+  created_at?: any;
 }
 
 
@@ -150,7 +151,7 @@ export interface Plein {
   odometre: number;
   station: string;
   type_saisie: 'manuelle' | 'auto';
-  photo_bon?: string | null;
+  photo_bon?: File | string;
   latitude?: number | null;
   longitude?: number | null;
 }
@@ -221,7 +222,7 @@ export interface Alerte {
 }
 
 export interface Correction {
-  id: number;
+  id?: number;
   table: string;
   record_id: number;
   champ: string;

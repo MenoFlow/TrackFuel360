@@ -1,7 +1,6 @@
 import { MainLayout } from '@/components/Layout/MainLayout';
 import { StatsCard } from '@/components/Dashboard/StatsCard';
 import { useDashboardStats } from '@/hooks/useDashboard';
-import { useAlertes } from '@/hooks/useAlertes';
 import { Car, Fuel, AlertTriangle, DollarSign, TrendingUp, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,18 +10,48 @@ import { motion } from 'framer-motion';
 import { staggerContainer, staggerItem } from '@/lib/utils/motionVariants';
 import { MotionWrapper } from '@/components/Layout/MotionWrapper';
 import { FleetMap } from "./fleet-map";
-import { mockVehicules } from '@/lib/mockData';
+import { useAggregatedData } from '@/lib/mockData';
 import { useNavigate } from 'react-router-dom';
+import { calculerDashboardStats } from '@/lib/services/dashboardService';
+import { useVehicules } from '@/hooks/useVehicules';
+import { generateAlertes } from '@/lib/services/alerteService';
+
+export function formatNumberShort(n: number): string {
+  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1).replace(/\.0$/, '') + 'B';
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return n.toLocaleString('fr-FR');
+}
 
 
 const Dashboard = () => {
+  //useAggregatedData
+  const { vehicules, trajets, pleins, niveauxCarburant, geofences, pleinExifMetadata, traceGPSPoints, params } = useAggregatedData();
+
+    const alertes = generateAlertes(
+      vehicules,
+      trajets,
+      pleins,
+      niveauxCarburant,
+      geofences,
+      pleinExifMetadata,
+      traceGPSPoints,
+      params
+    );
+  const mockDashboardStats = calculerDashboardStats(
+    vehicules,
+    trajets,
+    pleins,
+    niveauxCarburant,
+    alertes
+  );
+
+
   const { t } = useTranslation();
-  const { data: stats, isLoading: statsLoading } = useDashboardStats();
-  const { data: alertes, isLoading: alertesLoading } = useAlertes('new');
+  const stats = mockDashboardStats;
   const navigate = useNavigate();
   
-
-  if (statsLoading) {
+  if (false) {
     return (
       <MainLayout>
         <div className="space-y-6">
@@ -71,9 +100,9 @@ const Dashboard = () => {
           <MotionWrapper variant="stagger" delay={0.2}>
             <StatsCard
               title={t('dashboard.stats.fuelCost')}
-              value={`${((stats?.cout_carburant_mois)*4510).toLocaleString('fr-FR')} Ariary`}
+              value={`${formatNumberShort((stats?.cout_carburant_mois)*4510)} Ariary`}
               icon={DollarSign}
-              subtitle={`${stats?.litres_mois.toLocaleString('fr-FR')} L ${t('dashboard.consumed')}`}
+              subtitle={`${formatNumberShort(stats?.litres_mois)} L ${t('dashboard.consumed')}`}
             />
           </MotionWrapper>
           <MotionWrapper variant="stagger" delay={0.3}>
@@ -91,7 +120,7 @@ const Dashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}  
         >
-          <FleetMap vehicles={mockVehicules} onVehicleSelect={(v) => navigate(`/vehicle/${v.immatriculation}`)} />
+          <FleetMap vehicles={vehicules} onVehicleSelect={(v) => navigate(`/vehicle/${v.immatriculation}`)} />
         </motion.div>
 
         {/* Top véhicules à forte consommation */}
@@ -143,7 +172,7 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {alertesLoading ? (
+              {false ? (
                 <div className="space-y-3">
                   {[1, 2].map(i => <Skeleton key={i} className="h-20" />)}
                 </div>

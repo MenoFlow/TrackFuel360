@@ -8,34 +8,32 @@ import { fr } from 'date-fns/locale';
 
 /**
  * Exporte un rapport dans le format spécifié
+ * @param returnBlob Si true, retourne le Blob au lieu de télécharger
  */
 export function exporterRapport(
   rapport: RapportData,
   formatExport: FormatExport,
+  returnBlob: boolean | string = false,
   fileName?: string
-): void {
-  const nomFichier = fileName || genererNomFichier(rapport, formatExport);
+): Blob | void {
+  const nomFichier = typeof returnBlob === 'string' ? returnBlob : (fileName || genererNomFichier(rapport, formatExport));
 
   switch (formatExport) {
     case 'pdf':
-      exporterPDF(rapport, nomFichier);
-      break;
+      return exporterPDF(rapport, nomFichier, typeof returnBlob === 'boolean' ? returnBlob : false);
     case 'excel':
-      exporterExcel(rapport, nomFichier);
-      break;
+      return exporterExcel(rapport, nomFichier, typeof returnBlob === 'boolean' ? returnBlob : false);
     case 'csv':
-      exporterCSV(rapport, nomFichier);
-      break;
+      return exporterCSV(rapport, nomFichier, typeof returnBlob === 'boolean' ? returnBlob : false);
     case 'json':
-      exporterJSON(rapport, nomFichier);
-      break;
+      return exporterJSON(rapport, nomFichier, typeof returnBlob === 'boolean' ? returnBlob : false);
   }
 }
 
 /**
  * Export PDF avec jsPDF
  */
-function exporterPDF(rapport: RapportData, nomFichier: string): void {
+function exporterPDF(rapport: RapportData, nomFichier: string, returnBlob: boolean = false): Blob | void {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.width;
   
@@ -115,13 +113,17 @@ function exporterPDF(rapport: RapportData, nomFichier: string): void {
     );
   }
   
-  doc.save(nomFichier);
+  if (returnBlob) {
+    return doc.output('blob');
+  } else {
+    doc.save(nomFichier);
+  }
 }
 
 /**
  * Export Excel avec XLSX
  */
-function exporterExcel(rapport: RapportData, nomFichier: string): void {
+function exporterExcel(rapport: RapportData, nomFichier: string, returnBlob: boolean = false): Blob | void {
   const wb = utils.book_new();
   
   // Feuille de métadonnées
@@ -152,13 +154,18 @@ function exporterExcel(rapport: RapportData, nomFichier: string): void {
     utils.book_append_sheet(wb, wsDonnees, 'Données');
   }
   
-  writeFile(wb, nomFichier);
+  if (returnBlob) {
+    const wbout = writeFile(wb, nomFichier, { bookType: 'xlsx', type: 'array' });
+    return new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  } else {
+    writeFile(wb, nomFichier);
+  }
 }
 
 /**
  * Export CSV
  */
-function exporterCSV(rapport: RapportData, nomFichier: string): void {
+function exporterCSV(rapport: RapportData, nomFichier: string, returnBlob: boolean = false): Blob | void {
   if (rapport.donnees.length === 0) {
     console.warn('Aucune donnée à exporter');
     return;
@@ -180,24 +187,34 @@ function exporterCSV(rapport: RapportData, nomFichier: string): void {
   ].join('\n');
   
   const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = nomFichier;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  
+  if (returnBlob) {
+    return blob;
+  } else {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = nomFichier;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
 }
 
 /**
  * Export JSON
  */
-function exporterJSON(rapport: RapportData, nomFichier: string): void {
+function exporterJSON(rapport: RapportData, nomFichier: string, returnBlob: boolean = false): Blob | void {
   const json = JSON.stringify(rapport, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = nomFichier;
-  link.click();
-  URL.revokeObjectURL(link.href);
+  
+  if (returnBlob) {
+    return blob;
+  } else {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = nomFichier;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
 }
 
 /**
@@ -244,28 +261,69 @@ function formatNumber(num: number): string {
 }
 
 /**
- * Génère un lien d'export sécurisé (temporaire)
+ * Génère un lien d'export sécurisé avec expiration
+ * Durée par défaut: 10 minutes (minimum recommandé: 5 minutes)
  */
 export function genererLienExportSecurise(
   rapportId: string,
   formatExport: FormatExport,
-  expirationHeures: number = 24
+  expirationMinutes: number = 10
 ): string {
-  // Génération d'un lien sécurisé fonctionnel avec token
-  const expiration = Date.now() + (expirationHeures * 60 * 60 * 1000);
-  const token = btoa(`${rapportId}:${formatExport}:${expiration}`);
-  return `${window.location.origin}/rapports/export/${token}`;
+  const expirationTime = Date.now() + expirationMinutes * 60 * 1000;
+  const token = btoa(`${rapportId}:${formatExport}:${expirationTime}`);
+  const url = `${window.location.origin}/rapports/export/${token}`;
+  
+  console.log('[exportUtils] Génération lien sécurisé:', {
+    rapportId,
+    format: formatExport,
+    expirationMinutes,
+    expiresAt: new Date(expirationTime).toISOString(),
+    token,
+    url
+  });
+  
+  return url;
 }
 
 /**
  * Copie un texte dans le presse-papier
  */
+/**
+ * Copie un texte dans le presse-papier (fallback inclus)
+ */
 export async function copierDansPressePapier(texte: string): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(texte);
-    return true;
-  } catch (err) {
-    console.error('Erreur lors de la copie:', err);
-    return false;
+  // 1. Méthode moderne (préférée)
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(texte);
+      console.log('Lien copié dans le presse-papier');
+      return true;
+    } catch (err) {
+      console.warn('Clipboard API échouée, fallback activé', err);
+    }
   }
+
+  // 2. Fallback old-school (toujours fonctionnel)
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = texte;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    const success = document.execCommand('copy');
+    document.body.removeChild(textarea);
+
+    if (success) {
+      console.log('Lien copié via fallback');
+      return true;
+    }
+  } catch (err) {
+    console.error('Fallback copie échoué', err);
+  }
+
+  // 3. Échec total
+  alert('Impossible de copier le lien. Sélectionne-le manuellement : ' + texte);
+  return false;
 }

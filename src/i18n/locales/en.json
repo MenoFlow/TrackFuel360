@@ -380,7 +380,10 @@
     "entryType": "Entry type",
     "automatic": "Automatic",
     "automaticShort": "Auto",
-    "manual": "Manual"
+    "manual": "Manual",
+    "odometerInvalid": "Invalid odometer",
+    "lastOdometerWas": "The last recorded odometer was {{odo}} km"
+
   },
   "alerts": {
     "title": "Alert management",
@@ -629,7 +632,16 @@
     "sending": "Sending...",
     "sendRequest": "Send request",
     "requestSent": "Request sent",
-    "requestSentDesc": "Your correction request has been sent successfully."
+    "requestSentDesc": "Your correction request has been sent successfully.",
+    "fieldToCorrect": "Field to correct",
+    "currentValue": "Current value",
+    "newValue": "New value",
+    "enterNewValue": "Enter the new value",
+    "distanceKm": "Distance (km)",
+    "liters": "Liters",
+    "odometer": "Odometer",
+    "validNumberRequired": "Please enter a valid number"
+
   },
   "comparison": {
     "title": "Fleet Comparison",

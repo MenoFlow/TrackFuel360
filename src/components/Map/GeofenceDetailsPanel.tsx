@@ -67,7 +67,7 @@ export function GeofenceDetailsPanel({
           <div>
             <span className="text-sm font-semibold">{t('geofence.center')}:</span>
             <p className="text-xs text-muted-foreground">
-              {geofence.lat.toFixed(5)}, {geofence.lon.toFixed(5)}
+              {Number(geofence.lat).toFixed(5)}, {Number(geofence.lon).toFixed(5)}
             </p>
           </div>
           <div>

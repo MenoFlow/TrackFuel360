@@ -381,7 +381,9 @@
     "entryType": "Type de saisie",
     "automatic": "Automatique",
     "automaticShort": "Auto",
-    "manual": "Manuelle"
+    "manual": "Manuelle",
+    "odometerInvalid": "Odomètre invalide",
+    "lastOdometerWas": "Le dernier odomètre enregistré était {{odo}} km"
   },
   "alerts": {
     "title": "Gestion des alertes",
@@ -632,7 +634,15 @@
     "sending": "Envoi...",
     "sendRequest": "Envoyer la demande",
     "requestSent": "Demande envoyée",
-    "requestSentDesc": "Votre demande de correction a été envoyée avec succès."
+    "requestSentDesc": "Votre demande de correction a été envoyée avec succès.",
+    "fieldToCorrect": "Champ à corriger",
+    "currentValue": "Valeur actuelle",
+    "newValue": "Nouvelle valeur",
+    "enterNewValue": "Entrez la nouvelle valeur",
+    "distanceKm": "Distance (km)",
+    "liters": "Litres",
+    "odometer": "Odometre",
+    "validNumberRequired": "Veuillez entrer un nombre valide"
   },
   "comparison": {
     "title": "Comparaison de Flotte",

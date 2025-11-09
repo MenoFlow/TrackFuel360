@@ -11,17 +11,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Save, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface TripDialogProps {
-  editingTripId: string | null;
+  editingTripId: number | null;
   distanceKm: number | null;
   tStart: string;
   tEnd: string;
   typeSaisie: string;
-  chauffeurId: string;
+  chauffeurId: number;
   odometreDebut: number;
   odometreFin: number;
   setTStart: (value: string) => void;
@@ -147,6 +146,7 @@ export function TripDialog({
             </Label>
             <Input
               id="chauffeur"
+              type="number"
               value={chauffeurId}
               onChange={(e) => setChauffeurId(e.target.value)}
               className="col-span-3"

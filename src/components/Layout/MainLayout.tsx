@@ -13,7 +13,7 @@ import {
   LogOut,
   Menu,
   FileEdit,
-  Map,
+  Map,  
   BarChart3,
   ChevronLeft,
   ChevronRight,
@@ -151,7 +151,7 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
   return (
     <div className="flex h-screen bg-background">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:block">
+      <aside className="hidden md:block fixed left-0 top-0 h-screen z-40">
         <Sidebar 
           collapsed={collapsed} 
           onToggleCollapse={toggleCollapse} 
@@ -173,12 +173,14 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
         </Sheet>
       </div>
       
-      {/* Main Content */}
-      <main className="flex-1 overflow-auto">
-        <div className="w-full h-full p-4 md:p-6">
+      {/* Main Content - DÉCALÉ SELON LA SIDEBAR */}
+      <main className={cn(
+        "flex-1 overflow-auto transition-all duration-300",
+        collapsed ? "md:pl-20" : "md:pl-64"
+      )}>
+        <div className="w-full h-full p-4 md:p-6 pt-16 md:pt-6">
           {children}
         </div>
-
       </main>
 
       <ConfirmDialog

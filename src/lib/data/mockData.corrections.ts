@@ -17,7 +17,7 @@ export const mockCorrections: Correction[] = [
     validated_by: null,
     validated_at: null,
   },
-  {
+  { 
     id: 2,
     table: 'pleins',
     record_id: 1,

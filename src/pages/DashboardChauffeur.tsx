@@ -2,7 +2,6 @@ import { useChauffeurAccess } from '@/hooks/useChauffeurAccess';
 import { useVehicules } from '@/hooks/useVehicules';
 import { usePleins } from '@/hooks/usePleins';
 import { useTrajets } from '@/hooks/useTrajets';
-import { useAlertes } from '@/hooks/useAlertes';
 import { useAffectations } from '@/hooks/useAffectations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,14 +14,27 @@ import { motion } from 'framer-motion';
 import { staggerContainer, staggerItem } from '@/lib/utils/motionVariants';
 import { MotionWrapper } from '@/components/Layout/MotionWrapper';
 import Header from '@/components/Chauffeur/Header';
+import { generateAlertes } from '@/lib/services/alerteService';
+import { useAggregatedData } from '@/lib/mockData';
 
 export default function DashboardChauffeur() {
+  const { vehicules, trajets, pleins, niveauxCarburant, geofences, pleinExifMetadata, traceGPSPoints, params } = useAggregatedData();
+
+  const allAlertes = generateAlertes(
+    vehicules,
+    trajets,
+    pleins,
+    niveauxCarburant,
+    geofences,
+    pleinExifMetadata,
+    traceGPSPoints,
+    params
+  );
   const { t } = useTranslation();
   const { currentUser, logout, filterVehiculesForDriver, filterDataForDriver } = useChauffeurAccess();
   const { data: allVehicules, isLoading: vehiculesLoading } = useVehicules();
   const { data: allPleins, isLoading: pleinsLoading } = usePleins();
   const { data: allTrajets, isLoading: trajetsLoading } = useTrajets();
-  const { data: allAlertes, isLoading: alertesLoading } = useAlertes();
   const { data: affectations } = useAffectations();
 
   if (!currentUser) {
@@ -39,7 +51,7 @@ export default function DashboardChauffeur() {
     a.chauffeur_id === currentUser.id
   ) : [];
 
-  const isLoading = vehiculesLoading || pleinsLoading || trajetsLoading || alertesLoading;
+  const isLoading = vehiculesLoading || pleinsLoading || trajetsLoading;
 
   if (isLoading) {
     return (

@@ -19,11 +19,19 @@ import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@radix-ui/react-dropdown-menu';
 import { useNavigate } from 'react-router-dom';
 import { VehicleDialog } from '@/components/Vehicules/VehicleDialog';
+import { useDeleteVehicule } from '@/hooks/useVehicules';
+
 
 const Vehicules = () => {
   const { t } = useTranslation();
   const { data: vehicules, isLoading } = useVehicules();
   const navigate = useNavigate();
+
+  const { mutate: deleteVehicule } = useDeleteVehicule();
+  const handleDelete = (id: number) => {
+    deleteVehicule(id);
+  };
+  
   
   // Filtres
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -230,7 +238,7 @@ const Vehicules = () => {
                             <Button 
                               variant="outline" 
                               className="flex-1"
-                              // onClick={() => handleDeleteVehicule(vehicule)}
+                              // onClick={() => handleDelete(vehicule.id)}
                             >
                             <Trash2 className="h-4 w-4" />
                             {t('common.delete')}
@@ -278,7 +286,7 @@ const Vehicules = () => {
                   <Button variant="outline" className="w-full mt-4" onClick={() =>  navigate(`/vehicle/${vehicule.immatriculation}`)}>
                   {t('vehicles.viewDetails')}
                   </Button>
-                  <Button variant="outline" onClick={() => navigate("/trips/"+vehicule.immatriculation)} className="w-full mt-4">
+                  <Button variant="outline" onClick={() => navigate("/trips/"+vehicule.id)} className="w-full mt-4">
                     Trajets
                   </Button>
                 </CardContent>
@@ -332,7 +340,7 @@ const Vehicules = () => {
       <ConfirmDialog
         open={!!deletingVehicle}
         onOpenChange={(open) => !open && setDeletingVehicle(null)}
-        onConfirm={handleDeleteVehicle}
+        onConfirm={()=>handleDelete(deletingVehicle.id)}
         title={t('confirm.deleteVehicle')}
         description={`${t('confirm.deleteVehicleDesc')} ${deletingVehicle?.immatriculation}?`}
         confirmText={t('common.delete')}

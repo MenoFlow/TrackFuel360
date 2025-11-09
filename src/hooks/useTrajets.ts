@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Trajet } from '@/types';
-import { mockTrajets } from '@/lib/mockData';
 import { OfflineService } from '@/lib/services/offlineService';
 import { useOnlineStatus } from './useOnlineStatus';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const API_BASE_URL = '/api/trajets';
 
 export const useTrajets = (vehiculeId?: number) => {
   const isOnline = useOnlineStatus();
@@ -13,10 +13,13 @@ export const useTrajets = (vehiculeId?: number) => {
     queryKey: vehiculeId ? ['trajets', vehiculeId] : ['trajets'],
     queryFn: async (): Promise<Trajet[]> => {
       // Combiner les données du backend (mockées) avec les données locales
-      await delay(300);
+      // await delay(300);
+      const response = await fetch(`${API_BASE_URL}`);
+      if (!response.ok) throw new Error('Erreur lors de la récupération des utilisateurs');
+      const data = await response.json();
       const serverTrajets = vehiculeId 
-        ? mockTrajets.filter(t => t.vehicule_id === vehiculeId)
-        : mockTrajets;
+        ? data.filter(t => t.vehicule_id === vehiculeId)
+        : data;
       
       // Ajouter les trajets stockés localement (hors-ligne)
       const offlineTrajets = OfflineService.getTrajetsOffline();

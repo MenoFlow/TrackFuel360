@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User } from '@/types';
+import { Trajet, Plein, User, Vehicule } from '@/types';
 
 export const useChauffeurAccess = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -34,7 +34,9 @@ export const useChauffeurAccess = () => {
   const isAuditor = currentUser?.role === 'auditor';
 
   // Filtre les données pour ne retourner que celles du chauffeur
-  const filterDataForDriver = <T extends { chauffeur_id?: number }>(data: T[]): T[] => {
+  const filterDataForDriver = <T extends { chauffeur_id: number }>(
+    data: T[]
+  ): T[] => {
     if (!isDriver || !currentUser) return data;
     return data.filter(item => item.chauffeur_id === currentUser.id);
   };
@@ -47,21 +49,23 @@ export const useChauffeurAccess = () => {
     return today >= debut && today <= fin;
   };
 
-  // Filtre les véhicules assignés au chauffeur
-  const filterVehiculesForDriver = <T extends { id: number }>(
-    vehicules: T[],
+
+  const filterVehiculesForDriver = (
+    vehicules: Vehicule[],
     affectations: Array<{ vehicule_id: number; chauffeur_id: number; date_debut: string; date_fin: string }>
-  ): T[] => {
+  ): Vehicule[] => {
     if (!isDriver || !currentUser) return vehicules;
-    
+  
     const assignedVehicleIds = affectations
-    .filter(a =>
-      a.chauffeur_id === currentUser.id &&
-      isTodayBetween(a.date_debut, a.date_fin)
-    )
-    .map(a => a.vehicule_id);
+      .filter(a =>
+        a.chauffeur_id === currentUser.id &&
+        isTodayBetween(a.date_debut, a.date_fin)
+      )
+      .map(a => a.vehicule_id);
+  
     return vehicules.filter(v => assignedVehicleIds.includes(v.id));
   };
+  
 
   return {
     currentUser,
@@ -74,6 +78,6 @@ export const useChauffeurAccess = () => {
     isAuditor,
     logout,
     filterDataForDriver,
-    filterVehiculesForDriver,
+    filterVehiculesForDriver
   };
 };

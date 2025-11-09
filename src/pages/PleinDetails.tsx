@@ -1,47 +1,136 @@
-import { MainLayout } from '@/components/Layout/MainLayout';
-import { useParams, useNavigate } from 'react-router-dom';
-import { usePleins } from '@/hooks/usePleins';
-import { useVehicules } from '@/hooks/useVehicules';
-import { useUsers } from '@/hooks/useUsers';
-import { usePleinMetadata } from '@/hooks/usePleinMetadata';
-import { useGeofences } from '@/hooks/useGeofences';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, Download, MapPin, Clock, Camera, AlertTriangle, CheckCircle } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { isPointInGeofence } from '@/lib/utils/geolocation';
+import { MainLayout } from "@/components/Layout/MainLayout";
+import { useParams, useNavigate } from "react-router-dom";
+import { usePleins } from "@/hooks/usePleins";
+import { useVehicules } from "@/hooks/useVehicules";
+import { useUsers } from "@/hooks/useUsers";
+import { usePleinMetadata } from "@/hooks/usePleinMetadata";
+import { useGeofences } from "@/hooks/useGeofences";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
+import {
+  ArrowLeft,
+  Download,
+  MapPin,
+  Clock,
+  Camera,
+  AlertTriangle,
+  CheckCircle,
+} from "lucide-react";
+import { format, isValid } from "date-fns";
+import { fr } from "date-fns/locale";
+import { isPointInGeofence } from "@/lib/utils/geolocation";
+
+// FONCTION DE SÉCURITÉ ULTRA-ROBUSTE
+const safeFormat = (
+  dateStr: string | null | undefined,
+  fallback = "—"
+): string => {
+  if (!dateStr) return fallback;
+  const date = new Date(dateStr);
+  return isValid(date)
+    ? format(date, "dd MMMM yyyy à HH:mm", { locale: fr })
+    : fallback;
+};
+
+const API_BASE_URL = "/api/uploads/receipts/";
 
 const PleinDetails = () => {
-  let { id } = useParams<{ id }>();
-  // id = parseInt(id.toString());
+  const { id } = useParams<{ id: string }>();
+  const pleinId = parseInt(id, 10);
   const navigate = useNavigate();
+
   const { data: pleins } = usePleins();
   const { data: vehicules } = useVehicules();
   const { data: users } = useUsers();
-  const { data: exifMetadata } = usePleinMetadata(id);
+  const { data: exifMetadata } = usePleinMetadata(pleinId);
   const { geofences } = useGeofences();
 
-  const plein = pleins?.find(p => p.id === id);
-  const vehicule = vehicules?.find(v => v.id === plein?.vehicule_id);
-  const chauffeur = users?.find(u => u.id === plein?.chauffeur_id);
-  
-  // Vérifier que exifMetadata est un objet unique et non un tableau
+  const plein = pleins?.find((p) => p.id === pleinId);
+  const vehicule = vehicules?.find((v) => v.id === plein?.vehicule_id);
+  const chauffeur = users?.find((u) => u.id === plein?.chauffeur_id);
   const metadata = Array.isArray(exifMetadata) ? null : exifMetadata;
 
+  // DATES SÉCURISÉES
+  const pleinDate = plein?.date ? new Date(plein.date) : null;
+  const exifDateStr =
+    metadata?.date && metadata?.heure
+      ? `${metadata.date.split("T")[0]}T${metadata.heure}`
+      : null;
+  const exifDate = exifDateStr ? new Date(exifDateStr) : null;
+
+  const dateEcart =
+    pleinDate && exifDate && isValid(pleinDate) && isValid(exifDate)
+      ? Math.abs(pleinDate.getTime() - exifDate.getTime()) / (1000 * 60 * 60)
+      : 0;
+
+  const gpsEcart =
+    metadata && plein?.latitude && plein?.longitude
+      ? Math.sqrt(
+          Math.pow((Number(metadata.latitude) - plein.latitude) * 111, 2) +
+            Math.pow(
+              (Number(metadata.longitude) - plein.longitude) *
+                111 *
+                Math.cos((plein.latitude * Math.PI) / 180),
+              2
+            )
+        )
+      : 0;
+
+  const stations = geofences?.filter((g) => g.type === "station") || [];
+  const pleinDansStation =
+    plein?.latitude && plein?.longitude
+      ? stations.some((s) =>
+          isPointInGeofence(
+            plein.latitude!,
+            plein.longitude!,
+            s.lat,
+            s.lon,
+            s.rayon_metres
+          )
+        )
+      : false;
+
+  const exifDansStation =
+    metadata?.latitude && metadata?.longitude
+      ? stations.some((s) =>
+          isPointInGeofence(
+            Number(metadata.latitude),
+            Number(metadata.longitude),
+            s.lat,
+            s.lon,
+            s.rayon_metres
+          )
+        )
+      : false;
+
+  const hasAnomalies =
+    dateEcart > 2 || gpsEcart > 0.5 || !pleinDansStation || !exifDansStation;
+
+  const photo = '/' + plein.photo_bon.replace(/\\/g, '/');
+
+  const handleDownloadPhoto = () => {
+    if (photo) {
+      const link = document.createElement("a");
+      link.href = photo;
+      link.download = plein.photo_bon;
+      link.click();
+    }
+  };
+
+  // SI PAS DE PLEIN → PAGE 404 PROPRE
   if (!plein) {
     return (
       <MainLayout>
-        <div className="space-y-6">
+        <div className="space-y-6 p-6">
           <Button variant="ghost" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Retour
           </Button>
           <Card>
-            <CardContent className="py-12">
-              <p className="text-center text-muted-foreground">Plein non trouvé</p>
+            <CardContent className="py-12 text-center">
+              <p className="text-muted-foreground">Plein non trouvé</p>
             </CardContent>
           </Card>
         </div>
@@ -49,113 +138,91 @@ const PleinDetails = () => {
     );
   }
 
-  // Calcul des écarts et anomalies
-  const dateEcart = metadata 
-    ? Math.abs(new Date(plein.date).getTime() - new Date(`${metadata.date}T${metadata.heure}Z`).getTime()) / (1000 * 60 * 60)
-    : 0;
-
-  const gpsEcart = metadata && plein.latitude && plein.longitude
-    ? Math.sqrt(
-        Math.pow((metadata.latitude - plein.latitude) * 111, 2) +
-        Math.pow((metadata.longitude - plein.longitude) * 111 * Math.cos(plein.latitude * Math.PI / 180), 2)
-      )
-    : 0;
-
-  const stations = geofences?.filter(g => g.type === 'station') || [];
-  const pleinDansStation = plein.latitude && plein.longitude 
-    ? stations.some(s => isPointInGeofence(plein.latitude!, plein.longitude!, s.lat, s.lon, s.rayon_metres))
-    : false;
-
-  const exifDansStation = metadata 
-    ? stations.some(s => isPointInGeofence(metadata.latitude, metadata.longitude, s.lat, s.lon, s.rayon_metres))
-    : false;
-
-  const hasAnomalies = dateEcart > 2 || gpsEcart > 0.5 || !pleinDansStation || !exifDansStation;
-
-  const handleDownloadPhoto = () => {
-    if (plein.photo_bon) {
-      const link = document.createElement('a');
-      link.href = `/src/assets/receipts/${plein.photo_bon}`;
-      link.download = plein.photo_bon;
-      link.click();
-    }
-  };
-
   return (
     <MainLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-3">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="w-full sm:w-auto">
+      <div className="space-y-6 p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <Button variant="ghost" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Retour
           </Button>
-          
-          {hasAnomalies ? (
-            <Badge variant="destructive" className="text-base px-4 py-2 w-full sm:w-auto justify-center">
-              <AlertTriangle className="h-4 w-4 mr-2" />
-              Plein suspect
-            </Badge>
-          ) : (
-            <Badge variant="secondary" className="text-base px-4 py-2 w-full sm:w-auto justify-center">
-              <CheckCircle className="h-4 w-4 mr-2" />
-              Plein validé
-            </Badge>
-          )}
+
+          <Badge
+            variant={hasAnomalies ? "destructive" : "secondary"}
+            className="text-base px-4 py-2"
+          >
+            {hasAnomalies ? (
+              <>
+                <AlertTriangle className="h-4 w-4 mr-2" />
+                Plein suspect
+              </>
+            ) : (
+              <>
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Plein validé
+              </>
+            )}
+          </Badge>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Informations du plein */}
+          {/* COLONNE 1 : Données saisies */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Camera className="h-5 w-5" />
-                Données saisies {plein.type_saisie === 'auto' ? '(OCR)' : '(Manuel)'}
+                Données saisies{" "}
+                {plein.type_saisie === "auto" ? "(OCR)" : "(Manuel)"}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm text-muted-foreground">Véhicule</p>
-                <p className="font-semibold text-lg">{vehicule?.immatriculation}</p>
+                <p className="font-semibold text-lg">
+                  {vehicule?.immatriculation || "—"}
+                </p>
               </div>
-              
               <div>
                 <p className="text-sm text-muted-foreground">Chauffeur</p>
-                <p className="font-semibold">{chauffeur ? `${chauffeur.prenom} ${chauffeur.nom}` : plein.chauffeur_id}</p>
+                <p className="font-semibold">
+                  {chauffeur
+                    ? `${chauffeur.prenom} ${chauffeur.nom}`
+                    : "Inconnu"}
+                </p>
               </div>
 
               <Separator />
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-sm text-muted-foreground">Date & Heure</p>
+                  <p className="text-muted-foreground">Date & Heure</p>
+                  <p className="font-semibold">{safeFormat(plein.date)}</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Litres</p>
+                  <p className="font-bold text-lg">{plein.litres}L</p>
+                </div>
+                <div>
+                  <p className="text-muted-foreground">Prix/L</p>
                   <p className="font-semibold">
-                    {format(new Date(plein.date), 'dd MMM yyyy HH:mm', { locale: fr })}
+                    ${Number(plein.prix_unitaire).toFixed(2)}
                   </p>
                 </div>
-                
                 <div>
-                  <p className="text-sm text-muted-foreground">Litres</p>
-                  <p className="font-semibold text-lg">{plein.litres}L</p>
+                  <p className="text-muted-foreground">Total</p>
+                  <p className="font-bold text-lg">
+                    ${(plein.litres * plein.prix_unitaire).toFixed(2)}
+                  </p>
                 </div>
-
                 <div>
-                  <p className="text-sm text-muted-foreground">Prix unitaire</p>
-                  <p className="font-semibold">${plein.prix_unitaire.toFixed(2)}/L</p>
+                  <p className="text-muted-foreground">Odomètre</p>
+                  <p className="font-semibold">
+                    {plein.odometre.toLocaleString()} km
+                  </p>
                 </div>
-
                 <div>
-                  <p className="text-sm text-muted-foreground">Coût total</p>
-                  <p className="font-semibold text-lg">${(plein.litres * plein.prix_unitaire).toFixed(2)}</p>
-                </div>
-
-                <div>
-                  <p className="text-sm text-muted-foreground">Odomètre</p>
-                  <p className="font-semibold">{plein.odometre.toLocaleString()} km</p>
-                </div>
-
-                <div>
-                  <p className="text-sm text-muted-foreground">Station</p>
-                  <p className="font-semibold">{plein.station || 'Non renseignée'}</p>
+                  <p className="text-muted-foreground">Station</p>
+                  <p className="font-semibold">{plein.station || "—"}</p>
                 </div>
               </div>
 
@@ -163,155 +230,147 @@ const PleinDetails = () => {
                 <>
                   <Separator />
                   <div>
-                    <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
+                    <p className="text-sm text-muted-foreground flex items-center gap-2 mb-1">
                       <MapPin className="h-4 w-4" />
-                      Position GPS (saisie)
+                      GPS saisi
                     </p>
-                    <p className="font-mono text-sm">
-                      {plein.latitude.toFixed(6)}, {plein.longitude.toFixed(6)}
+                    <p className="font-mono text-xs">
+                      {Number(plein.latitude).toFixed(6)},{" "}
+                      {Number(plein.longitude).toFixed(6)}
                     </p>
-                    {pleinDansStation ? (
-                      <Badge variant="secondary" className="mt-2">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Dans une station autorisée
-                      </Badge>
-                    ) : (
-                      <Badge variant="destructive" className="mt-2">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        Hors station autorisée
-                      </Badge>
-                    )}
+                    <Badge
+                      variant={pleinDansStation ? "secondary" : "destructive"}
+                      className="mt-2"
+                    >
+                      {pleinDansStation ? "Dans station" : "Hors station"}
+                    </Badge>
                   </div>
                 </>
               )}
             </CardContent>
           </Card>
 
-          {/* Métadonnées EXIF */}
+          {/* COLONNE 2 : EXIF */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Clock className="h-5 w-5" />
-                Métadonnées EXIF (Photo)
+                Métadonnées photo
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent>
               {metadata ? (
-                <>
+                <div className="space-y-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Date & Heure (photo)</p>
-                    <p className="font-semibold">
-                      {format(new Date(`${metadata.date}T${metadata.heure}Z`), 'dd MMM yyyy HH:mm', { locale: fr })}
+                    <p className="text-sm text-muted-foreground">
+                      Photo prise le
                     </p>
+                    <p className="font-semibold">{safeFormat(exifDateStr)}</p>
                     {dateEcart > 0 && (
-                      <div className="mt-2">
-                        {dateEcart < 2 ? (
-                          <Badge variant="secondary">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Écart: {dateEcart.toFixed(1)}h
-                          </Badge>
-                        ) : (
-                          <Badge variant="destructive">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            Écart: {dateEcart.toFixed(1)}h (suspect)
-                          </Badge>
-                        )}
-                      </div>
+                      <Badge
+                        variant={dateEcart < 2 ? "secondary" : "destructive"}
+                        className="mt-2"
+                      >
+                        Écart: {dateEcart.toFixed(1)}h
+                      </Badge>
                     )}
                   </div>
 
                   <Separator />
 
                   <div>
-                    <p className="text-sm text-muted-foreground">Modèle téléphone</p>
-                    <p className="font-semibold">{metadata.modele_telephone}</p>
+                    <p className="text-sm text-muted-foreground">Téléphone</p>
+                    <p className="font-semibold">
+                      {metadata.modele_telephone || "Inconnu"}
+                    </p>
                   </div>
 
                   <Separator />
 
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2 flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Position GPS (photo)
-                    </p>
-                    <p className="font-mono text-sm">
-                      {metadata.latitude.toFixed(6)}, {metadata.longitude.toFixed(6)}
-                    </p>
-                    {exifDansStation ? (
-                      <Badge variant="secondary" className="mt-2">
-                        <CheckCircle className="h-3 w-3 mr-1" />
-                        Dans une station autorisée
+                  {metadata.latitude && metadata.longitude && (
+                    <div>
+                      <p className="text-sm text-muted-foreground flex items-center gap-2 mb-1">
+                        <MapPin className="h-4 w-4" />
+                        GPS photo
+                      </p>
+                      <p className="font-mono text-xs">
+                        {Number(metadata.latitude).toFixed(6)},{" "}
+                        {Number(metadata.longitude).toFixed(6)}
+                      </p>
+                      <Badge
+                        variant={exifDansStation ? "secondary" : "destructive"}
+                        className="mt-2"
+                      >
+                        {exifDansStation ? "Dans station" : "Hors station"}
                       </Badge>
-                    ) : (
-                      <Badge variant="destructive" className="mt-2">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        Hors station autorisée
-                      </Badge>
-                    )}
-                    
-                    {gpsEcart > 0 && (
-                      <div className="mt-2">
-                        {gpsEcart < 0.5 ? (
-                          <Badge variant="secondary">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Écart GPS: {gpsEcart.toFixed(2)} km
-                          </Badge>
-                        ) : (
-                          <Badge variant="destructive">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            Écart GPS: {gpsEcart.toFixed(2)} km (suspect)
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </>
+                      {gpsEcart > 0 && (
+                        <Badge
+                          variant={gpsEcart < 0.5 ? "secondary" : "destructive"}
+                          className="mt-2 ml-2"
+                        >
+                          GPS: {gpsEcart.toFixed(2)} km
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+                </div>
               ) : (
-                <div className="py-8 text-center">
-                  <AlertTriangle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Aucune métadonnée EXIF disponible</p>
-                  <Badge variant="destructive" className="mt-2">Suspect</Badge>
+                <div className="text-center py-8">
+                  <AlertTriangle className="h-12 w-12 text-destructive mx-auto mb-3" />
+                  <p className="text-muted-foreground">
+                    Aucune métadonnée EXIF
+                  </p>
+                  <Badge variant="destructive" className="mt-2">
+                    Suspect
+                  </Badge>
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Photo du bon */}
+        {/* PHOTO */}
         {plein.photo_bon && (
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex justify-between items-center">
                 <CardTitle className="flex items-center gap-2">
                   <Camera className="h-5 w-5" />
-                  Photo du bon de carburant
+                  Photo du bon
                 </CardTitle>
-                <Button onClick={handleDownloadPhoto} variant="outline">
+                <Button
+                  onClick={handleDownloadPhoto}
+                  variant="outline"
+                  size="sm"
+                >
                   <Download className="h-4 w-4 mr-2" />
                   Télécharger
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="flex justify-center bg-muted/50 rounded-lg p-6">
-                <img 
-                  src={`/src/assets/receipts/${plein.photo_bon}`}
-                  alt="Bon de carburant"
-                  className="max-w-md w-full rounded-lg shadow-lg"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/placeholder.svg';
-                  }}
-                />
+              <div className="bg-muted/50 rounded-lg p-4 flex justify-center">
+              {/* <img
+                src={`/api/${photo}`}
+                alt="Bon"
+                className="max-w-full h-auto rounded-lg shadow"
+                onError={(e) => {
+                  e.currentTarget.src = "/placeholder.svg";
+                  e.currentTarget.onerror = null;
+                }}
+              /> */}
+              <img src={photo} alt="Bon plein" />
+
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Analyse d'anomalies */}
+        {/* ANOMALIES */}
         {hasAnomalies && (
           <Card className="border-destructive">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-destructive">
+              <CardTitle className="text-destructive flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5" />
                 Anomalies détectées
               </CardTitle>
@@ -319,33 +378,33 @@ const PleinDetails = () => {
             <CardContent>
               <ul className="space-y-2">
                 {dateEcart > 2 && (
-                  <li className="flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
-                    <span>Écart de temps important entre la photo et la saisie ({dateEcart.toFixed(1)} heures)</span>
+                  <li className="flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    Écart horaire : {dateEcart.toFixed(1)}h
                   </li>
                 )}
                 {gpsEcart > 0.5 && (
-                  <li className="flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
-                    <span>Écart de position GPS entre la photo et la saisie ({gpsEcart.toFixed(2)} km)</span>
+                  <li className="flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    Écart GPS : {gpsEcart.toFixed(2)} km
                   </li>
                 )}
                 {!pleinDansStation && (
-                  <li className="flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
-                    <span>Position saisie hors des stations autorisées</span>
+                  <li className="flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    Saisie hors station autorisée
                   </li>
                 )}
                 {!exifDansStation && metadata && (
-                  <li className="flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
-                    <span>Position EXIF de la photo hors des stations autorisées</span>
+                  <li className="flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    Photo prise hors station
                   </li>
                 )}
                 {!metadata && (
-                  <li className="flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
-                    <span>Aucune métadonnée EXIF disponible (photo potentiellement modifiée)</span>
+                  <li className="flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    Aucune métadonnée EXIF
                   </li>
                 )}
               </ul>

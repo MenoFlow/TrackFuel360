@@ -378,7 +378,10 @@
     "entryType": "Tipo de entrada",
     "automatic": "Automático",
     "automaticShort": "Auto",
-    "manual": "Manual"
+    "manual": "Manual",
+    "odometerInvalid": "Odómetro inválido",
+    "lastOdometerWas": "El último odómetro registrado fue {{odo}} km"
+
   },
   "alerts": {
     "title": "Gestión de alertas",
@@ -627,7 +630,16 @@
     "sending": "Enviando...",
     "sendRequest": "Enviar solicitud",
     "requestSent": "Solicitud enviada",
-    "requestSentDesc": "Su solicitud de corrección ha sido enviada exitosamente."
+    "requestSentDesc": "Su solicitud de corrección ha sido enviada exitosamente.",
+    "fieldToCorrect": "Campo a corregir",
+    "currentValue": "Valor actual",
+    "newValue": "Nuevo valor",
+    "enterNewValue": "Ingrese el nuevo valor",
+    "distanceKm": "Distancia (km)",
+    "liters": "Litros",
+    "odometer": "Odómetro",
+    "validNumberRequired": "Por favor ingrese un número válido"
+
   },
   "comparison": {
     "title": "Comparación de Flota",

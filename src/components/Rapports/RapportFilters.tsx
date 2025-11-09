@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { useVehicules } from '@/hooks/useVehicules';
 import { useSites } from '@/hooks/useSites';
 import { X, Filter } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
 interface RapportFiltersProps {
   filtres: RapportFilters;
@@ -18,7 +17,6 @@ interface RapportFiltersProps {
 }
 
 export const RapportFiltersComponent = ({ filtres, onFiltresChange, onReset, selectedType }: RapportFiltersProps) => {
-  const { t } = useTranslation();
   const [localFiltres, setLocalFiltres] = useState<RapportFilters>(filtres);
   const { data: vehicules } = useVehicules();
   const { data: sites } = useSites();
@@ -58,7 +56,7 @@ export const RapportFiltersComponent = ({ filtres, onFiltresChange, onReset, sel
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">{t('common.filters')}</CardTitle>
+            <CardTitle className="text-lg">Filtres</CardTitle>
             {nbFiltresActifs > 0 && (
               <span className="text-sm text-muted-foreground">
                 ({nbFiltresActifs} actif{nbFiltresActifs > 1 ? 's' : ''})
@@ -78,7 +76,7 @@ export const RapportFiltersComponent = ({ filtres, onFiltresChange, onReset, sel
           {/* Période */}
           {shouldShowFilter('date_debut') && (
             <div className="space-y-2">
-              <Label htmlFor="date_debut">{t('reports.startDate')}</Label>
+              <Label htmlFor="date_debut">Date début</Label>
               <Input
                 id="date_debut"
                 type="date"
@@ -90,7 +88,7 @@ export const RapportFiltersComponent = ({ filtres, onFiltresChange, onReset, sel
 
           {shouldShowFilter('date_fin') && (
             <div className="space-y-2">
-              <Label htmlFor="date_fin">{t('reports.endDate')}</Label>
+              <Label htmlFor="date_fin">Date fin</Label>
               <Input
                 id="date_fin"
                 type="date"
@@ -103,15 +101,15 @@ export const RapportFiltersComponent = ({ filtres, onFiltresChange, onReset, sel
           {/* Site */}
           {shouldShowFilter('site_id') && (
             <div className="space-y-2">
-              <Label htmlFor="site_id">{t('site.title')}</Label>
-              <Select value={(localFiltres.site_id).toString() || ''} onValueChange={(v) => handleChange('site_id', v)}>
+              <Label htmlFor="site_id">Site</Label>
+              <Select value={(localFiltres.site_id)?.toString() || ''} onValueChange={(v) => handleChange('site_id', v)}>
                 <SelectTrigger id="site_id">
-                  <SelectValue placeholder={t('comparison.allSites')} />
+                  <SelectValue placeholder="Tous les sites" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="aucun">{t('comparison.allSites')}</SelectItem>
+                  <SelectItem value="aucun">Tous les sites</SelectItem>
                   {sites?.map(site => (
-                    <SelectItem key={site.id} value={(site.id).toString()}>
+                    <SelectItem key={site.id} value={(site.id)?.toString()}>
                       {site.nom}
                     </SelectItem>
                   ))}
@@ -123,15 +121,15 @@ export const RapportFiltersComponent = ({ filtres, onFiltresChange, onReset, sel
           {/* Véhicule */}
           {shouldShowFilter('vehicule_id') && (
             <div className="space-y-2">
-              <Label htmlFor="vehicule_id">{t('reports.vehicle')}</Label>
-              <Select value={(localFiltres.vehicule_id).toString() || ''} onValueChange={(v) => handleChange('vehicule_id', v)}>
+              <Label htmlFor="vehicule_id">Véhicule</Label>
+              <Select value={localFiltres.vehicule_id?.toString() || ''} onValueChange={(v) => handleChange('vehicule_id', v)}>
                 <SelectTrigger id="vehicule_id">
-                  <SelectValue placeholder={t('corrections.allVehicles')} />
+                  <SelectValue placeholder="Tous les véhicules" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="aucun">{t('corrections.allVehicles')}</SelectItem>
+                  <SelectItem value="aucun">Tous les véhicules</SelectItem>
                   {vehicules?.map(vehicule => (
-                    <SelectItem key={vehicule.immatriculation} value={vehicule.immatriculation}>
+                    <SelectItem key={vehicule.id} value={vehicule.id?.toString()}>
                       {vehicule.immatriculation} - {vehicule.modele}
                     </SelectItem>
                   ))}
@@ -144,7 +142,7 @@ export const RapportFiltersComponent = ({ filtres, onFiltresChange, onReset, sel
           {shouldShowFilter('chauffeur_id') && (
             <div className="space-y-2">
               <Label htmlFor="chauffeur_id">Chauffeur</Label>
-              <Select value={(localFiltres.chauffeur_id).toString() || ''} onValueChange={(v) => handleChange('chauffeur_id', v)}>
+              <Select value={localFiltres.chauffeur_id?.toString() || ''} onValueChange={(v) => handleChange('chauffeur_id', v)}>
                 <SelectTrigger id="chauffeur_id">
                   <SelectValue placeholder="Tous les chauffeurs" />
                 </SelectTrigger>

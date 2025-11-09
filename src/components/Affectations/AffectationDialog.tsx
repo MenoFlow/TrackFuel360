@@ -1,3 +1,4 @@
+// src/components/Affectations/AffectationDialog.tsx
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
@@ -7,11 +8,10 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCreateAffectation, useUpdateAffectation } from '@/hooks/useAffectations';
 import { useVehicules } from '@/hooks/useVehicules';
-import { useUsersByRole } from '@/hooks/useUsers';
+import { useUsers } from '@/hooks/useUsers';
 import { Affectation } from '@/types';
 import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
@@ -23,6 +23,7 @@ interface AffectationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   affectation?: Affectation;
+  onSuccess?: () => void; // NOUVEAU PROP
 }
 
 const formSchema = z.object({
@@ -37,56 +38,54 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>;
 
-export const AffectationDialog = ({ open, onOpenChange, affectation }: AffectationDialogProps) => {
+export const AffectationDialog = ({ 
+  open, 
+  onOpenChange, 
+  affectation, 
+  onSuccess 
+}: AffectationDialogProps) => {
   const { t } = useTranslation();
   const { data: vehicules } = useVehicules();
-  const { data: chauffeurs } = useUsersByRole('driver');
+  const { data: chauffeurs } = useUsers();
   const createAffectation = useCreateAffectation();
   const updateAffectation = useUpdateAffectation();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      vehicule_id: null,
-      chauffeur_id: null,
+      vehicule_id: 0,
+      chauffeur_id: 0,
       date_debut: new Date(),
       date_fin: new Date(),
     },
   });
 
+  // Reset formulaire à l'ouverture
   useEffect(() => {
-    if (affectation && vehicules) {
-      // Trouver le véhicule par son immatriculation pour obtenir son ID
-      const vehicule = vehicules.find(v => v.id === affectation.vehicule_id);
-      
+    if (!open) return;
+
+    if (affectation) {
       form.reset({
-        vehicule_id: vehicule?.id || null, // Utiliser l'ID du véhicule pour le formulaire
+        vehicule_id: affectation.vehicule_id,
         chauffeur_id: affectation.chauffeur_id,
         date_debut: new Date(affectation.date_debut),
         date_fin: new Date(affectation.date_fin),
       });
     } else {
       form.reset({
-        vehicule_id: null,
-        chauffeur_id: null,
+        vehicule_id: 0,
+        chauffeur_id: 0,
         date_debut: new Date(),
         date_fin: new Date(),
       });
     }
-  }, [affectation, vehicules, form, open]);
+  }, [open, affectation, form]);
 
   const onSubmit = async (data: FormData) => {
     try {
-      // Récupérer l'immatriculation du véhicule sélectionné
-      const selectedVehicule = vehicules?.find(v => v.id === data.vehicule_id);
-      if (!selectedVehicule) {
-        toast.error('Véhicule non trouvé');
-        return;
-      }
-
-      const affectationData = {
-        vehicule_id: selectedVehicule.id, // Utiliser l'immatriculation comme clé étrangère
-        chauffeur_id: data.chauffeur_id,
+      const payload: Omit<Affectation, 'id'> = {
+        vehicule_id: data.vehicule_id!,
+        chauffeur_id: data.chauffeur_id!,
         date_debut: data.date_debut.toISOString(),
         date_fin: data.date_fin.toISOString(),
       };
@@ -94,17 +93,21 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
       if (affectation) {
         await updateAffectation.mutateAsync({
           id: affectation.id,
-          data: affectationData,
+          data: payload,
         });
-        toast.success(t('assignments.assignmentUpdated'));
       } else {
-        await createAffectation.mutateAsync(affectationData);
-        toast.success(t('assignments.assignmentCreated'));
+        await createAffectation.mutateAsync(payload);
       }
-      onOpenChange(false);
-      form.reset();
+
+      // Appelle onSuccess (ferme + toast dans le parent)
+      onSuccess?.();
+
     } catch (error) {
-      toast.error(affectation ? t('assignments.errorUpdate') : t('assignments.errorCreation'));
+      toast.error(
+        affectation 
+          ? t('assignments.errorUpdate') 
+          : t('assignments.errorCreation')
+      );
     }
   };
 
@@ -115,27 +118,33 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
           <DialogTitle>
             {affectation ? t('assignments.editAssignment') : t('assignments.newAssignment')}
           </DialogTitle>
-          <DialogDescription>{t('assignments.description')}</DialogDescription>
+          <DialogDescription>
+            {t('assignments.fillForm')}
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* VÉHICULE */}
             <FormField
               control={form.control}
               name="vehicule_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('assignments.vehicle')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={(field.value).toString()}>
+                  <Select 
+                    onValueChange={(v) => field.onChange(Number(v))} 
+                    value={field.value?.toString()}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder={t('assignments.selectVehicle')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {vehicules?.map((vehicule) => (
-                        <SelectItem key={vehicule.id} value={(vehicule.id).toString()}>
-                          {vehicule.immatriculation} - {vehicule.marque} {vehicule.modele}
+                      {vehicules?.map((v) => (
+                        <SelectItem key={v.id} value={v.id.toString()}>
+                          {v.immatriculation} - {v.marque} {v.modele}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -145,22 +154,26 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
               )}
             />
 
+            {/* CHAUFFEUR */}
             <FormField
               control={form.control}
               name="chauffeur_id"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('assignments.driver')}</FormLabel>
-                  <Select onValueChange={field.onChange} value={(field.value.toString())}>
+                  <Select 
+                    onValueChange={(v) => field.onChange(Number(v))} 
+                    value={field.value?.toString()}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder={t('assignments.selectDriver')} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {chauffeurs?.map((chauffeur) => (
-                        <SelectItem key={chauffeur.id} value={chauffeur.id.toString()}>
-                          {chauffeur.prenom} {chauffeur.nom} ({chauffeur.matricule})
+                      {chauffeurs?.filter((c) => (c.role==="driver")).map((c) => (
+                        <SelectItem key={c.id} value={c.id.toString()}>
+                          {c.prenom} {c.nom} ({c.matricule})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -170,6 +183,7 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
               )}
             />
 
+            {/* DATE DÉBUT */}
             <FormField
               control={form.control}
               name="date_debut"
@@ -186,24 +200,18 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
                             !field.value && 'text-muted-foreground'
                           )}
                         >
-                          {field.value ? (
-                            format(field.value, 'PPP')
-                          ) : (
-                            <span>{t('assignments.startDate')}</span>
-                          )}
+                          {field.value ? format(field.value, 'PPP') : t('assignments.selectDate')}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarWrapper
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      initialFocus
-                      className="pointer-events-auto"
-                      placeholderText="Choisis une date"
-                    />
+                      <CalendarWrapper
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
                     </PopoverContent>
                   </Popover>
                   <FormMessage />
@@ -211,6 +219,7 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
               )}
             />
 
+            {/* DATE FIN */}
             <FormField
               control={form.control}
               name="date_fin"
@@ -227,24 +236,18 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
                             !field.value && 'text-muted-foreground'
                           )}
                         >
-                          {field.value ? (
-                            format(field.value, 'PPP')
-                          ) : (
-                            <span>{t('assignments.endDate')}</span>
-                          )}
+                          {field.value ? format(field.value, 'PPP') : t('assignments.selectDate')}
                           <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                    <CalendarWrapper
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      initialFocus
-                      className="pointer-events-auto"
-                      placeholderText="Choisis une date"
-                    />
+                      <CalendarWrapper
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        initialFocus
+                      />
                     </PopoverContent>
                   </Popover>
                   <FormMessage />
@@ -256,10 +259,14 @@ export const AffectationDialog = ({ open, onOpenChange, affectation }: Affectati
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 {t('common.cancel')}
               </Button>
-              <Button type="submit" disabled={createAffectation.isPending || updateAffectation.isPending}>
+              <Button 
+                type="submit" 
+                disabled={createAffectation.isPending || updateAffectation.isPending}
+              >
                 {createAffectation.isPending || updateAffectation.isPending
-                  ? t('common.loading')
-                  : t('common.save')}
+                  ? t('common.saving')
+                  : t('common.save')
+                }
               </Button>
             </DialogFooter>
           </form>

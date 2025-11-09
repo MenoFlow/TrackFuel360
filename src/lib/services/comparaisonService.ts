@@ -99,7 +99,7 @@ export function calculerComparaisonFlotte(
       chauffeur_prenom: chauffeur?.prenom,
       site_nom: site?.nom,
       total_distance_km: Number(totalDistance.toFixed(1)),
-      total_litres: Number(totalLitres.toFixed(1)),
+      total_litres: Number(Number(totalLitres).toFixed(1)),
       total_cout: Number(totalCout.toFixed(2)),
       nb_pleins: pleinsVehicule.length,
     };

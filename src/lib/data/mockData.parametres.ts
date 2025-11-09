@@ -1,12 +1,13 @@
 export interface Parametre {
   id: string;
-  label: string;
-  description: string;
+  label?: string;
+  description?: string;
   valeur: number;
-  unite: string;
-  min: number;
-  max: number;
+  unite?: string;
+  min?: number;
+  max?: number;
 }
+
 
 export const parametresData: Parametre[] = [
   {

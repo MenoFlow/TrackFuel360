@@ -15,8 +15,8 @@ import { GeofenceDetailsPanel } from '@/components/Map/GeofenceDetailsPanel';
 import { AlertButton } from '@/components/Map/AlertButton';
 import { AlertPanel } from '@/components/Map/AlertPanel';
 import { useGeofences } from '@/hooks/useGeofences';
-import { useVehiclePositions } from '@/hooks/useVehiclePositions';
 import { useAlerts } from '@/hooks/useAlerts';
+import { useQuery } from '@tanstack/react-query';
 import { getFuelStatus, calculateFuelRemaining, getFuelStatusColor, getFuelStatusLabel } from '@/lib/fuelCalculations';
 import { createCustomVehicleIcon, createLucideDivIcon, getGeofenceColor, getRadiusMarkerPosition, calculateDistanceMeters } from '@/lib/utils/mapUtils';
 import { detectDangerZoneViolations } from '@/lib/utils/geofenceUtils';
@@ -24,15 +24,158 @@ import { Geofence, GeofenceType, FilterState } from '@/types';
 import 'leaflet-draw';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { getTripsByVehicleId } from '@/lib/mockData';
+import { useTrajets } from '@/hooks/useTrajets';
+import { usePleins } from '@/hooks/usePleins';
 
 const MAP_CENTER: LatLngExpression = [-18.8792, 47.5079];
 
+/* ==================== TYPES ==================== */
+type Vehicule = {
+  id: number;
+  immatriculation: string;
+  marque: string;
+  modele: string;
+  type: 'essence' | 'diesel' | 'hybride' | 'electrique' | 'gpl';
+  capacite_reservoir: number;
+  consommation_nominale: number;
+  actif: boolean;
+};
+
+type Trip = {
+  id: number;
+  vehicule_id: number;
+  date_debut: string;
+  date_fin: string;
+  distance_km: number;
+  traceGps: TraceGpsPoint[];
+};
+
+type TraceGpsPoint = {
+  id: number;
+  trajet_id: number;
+  sequence: number;
+  latitude: number;
+  longitude: number;
+  timestamp: string;
+};
+
+type VehicleWithPosition = Vehicule & {
+  position: [number, number];
+  lastTrip?: Trip;
+};
+
+/* ==================== API FETCHERS ==================== */
+const fetchVehicules = async (): Promise<Vehicule[]> => {
+  const res = await fetch('/api/vehicules');
+  if (!res.ok) throw new Error('Erreur véhicules');
+  return res.json();
+};
+
+const fetchTrips = async (): Promise<Trip[]> => {
+  const res = await fetch('/api/trajets');
+  if (!res.ok) throw new Error('Erreur trajets');
+  return res.json();
+};
+
+const fetchTraceGps = async (): Promise<TraceGpsPoint[]> => {
+  const res = await fetch('/api/trace-gps');
+  if (!res.ok) throw new Error('Erreur trace GPS');
+  return res.json();
+};
+
+/* ==================== FONCTION LOCALE DE POSITION ==================== */
+const useLocalVehiclePositions = () => {
+  const { data: vehicules = [], isLoading: vLoading } = useQuery({
+    queryKey: ['vehicules'],
+    queryFn: fetchVehicules,
+  });
+
+  const { data: trips = [], isLoading: tLoading } = useQuery({
+    queryKey: ['trips'],
+    queryFn: fetchTrips,
+  });
+
+  const { data: traces = [], isLoading: gLoading } = useQuery({
+    queryKey: ['trace-gps'],
+    queryFn: fetchTraceGps,
+  });
+
+  return useMemo(() => {
+    if (vLoading || tLoading || gLoading) {
+      return { vehiclesWithPositions: [], isLoading: true };
+    }
+
+    const traceMap = new Map<number, TraceGpsPoint[]>();
+    traces.forEach((t) => {
+      if (!traceMap.has(t.trajet_id)) traceMap.set(t.trajet_id, []);
+      traceMap.get(t.trajet_id)!.push(t);
+    });
+
+    const tripMap = new Map<number, Trip[]>();
+    trips.forEach((trip) => {
+      if (!tripMap.has(trip.vehicule_id)) tripMap.set(trip.vehicule_id, []);
+      tripMap.get(trip.vehicule_id)!.push({
+        ...trip,
+        traceGps: traceMap.get(trip.id) || [],
+      });
+    });
+
+    const vehiclesWithPositions: VehicleWithPosition[] = vehicules
+      .filter((v) => v.actif)
+      .map((vehicule) => {
+        const vehicleTrips = tripMap.get(vehicule.id) || [];
+        const sortedTrips = vehicleTrips.sort((a, b) => 
+          new Date(b.date_fin).getTime() - new Date(a.date_fin).getTime()
+        );
+        const lastTrip = sortedTrips[0];
+        const lastPoint = lastTrip?.traceGps
+          .sort((a, b) => b.sequence - a.sequence)[0];
+
+        const position: [number, number] = lastPoint
+          ? [lastPoint.latitude, lastPoint.longitude]
+          : [MAP_CENTER[0], MAP_CENTER[1]];
+
+        return {
+          ...vehicule,
+          position,
+          lastTrip,
+        };
+      });
+
+    return { vehiclesWithPositions, isLoading: false };
+  }, [vehicules, trips, traces, vLoading, tLoading, gLoading]);
+};
+
+/* ==================== COMPOSANT PRINCIPAL ==================== */
 export default function MapView() {
-  // Hooks personnalisés
   const { t } = useTranslation();
   const [hideLateralWin, setHideLateralWin] = useState(false);
-  const { vehiclesWithPositions } = useVehiclePositions();
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [isReadOnly, setIsReadOnly] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [showAlertPanel, setShowAlertPanel] = useState(false);
+  const [pendingGeofenceData, setPendingGeofenceData] = useState<{
+    lat: number;
+    lon: number;
+    rayon_metres: number;
+  } | null>(null);
+  const [tempLayer, setTempLayer] = useState<any>(null); // État temporaire
+
+  const [filters, setFilters] = useState<FilterState>({
+    showCritical: true,
+    showLow: true,
+    showMedium: true,
+    showHigh: true,
+  });
+
+  // CHARGE TOUS LES TRAJETS ET PLEINS UNE SEULE FOIS
+  const { data: allTrips = [] } = useTrajets();
+  const { data: allRefuels = [] } = usePleins();
+
+  // Remplace useVehiclePositions
+  const { vehiclesWithPositions, isLoading: vehiclesLoading } = useLocalVehiclePositions();
+
+  // Geofences & Alerts
   const {
     geofences,
     selectedGeofence,
@@ -44,6 +187,7 @@ export default function MapView() {
     startEditing,
     cancelEditing,
   } = useGeofences();
+
   const {
     alerts,
     addAlert,
@@ -53,38 +197,24 @@ export default function MapView() {
     unreadCount,
   } = useAlerts();
 
-  // États locaux
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [isReadOnly, setIsReadOnly] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [showAlertPanel, setShowAlertPanel] = useState(false);
-  const [pendingGeofenceData, setPendingGeofenceData] = useState<{
-    lat: number;
-    lon: number;
-    rayon_metres: number;
-  } | null>(null);
+  // FONCTION SANS HOOKS
+  const getTripsAndRefuels = useCallback((vehiculeId: number) => {
+    const tripsData = allTrips.filter(t => t.vehicule_id === vehiculeId);
+    const refuels = allRefuels.filter(r => r.vehicule_id === vehiculeId);
+    return { tripsData, refuels };
+  }, [allTrips, allRefuels]);
 
-  // Filtres véhicules
-  const [filters, setFilters] = useState<FilterState>({
-    showCritical: true,
-    showLow: true,
-    showMedium: true,
-    showHigh: true,
-  });
-
-  // Tracking des véhicules en zone à risque (pour éviter les alertes en double)
+  // Détection zones à risque (SANS BOUCLE INFINIE)
   const vehiclesInDangerZoneRef = useRef<Set<string>>(new Set());
 
-  // Détection des violations de zones à risque
   useEffect(() => {
     const violations = detectDangerZoneViolations(vehiclesWithPositions, geofences);
-    const currentVehiclesInDanger = new Set<string>();
+    const current = new Set<string>();
 
     violations.forEach(({ vehicle, geofence }) => {
       const key = `${vehicle.id}-${geofence.id}`;
-      currentVehiclesInDanger.add(key);
+      current.add(key);
 
-      // Créer une alerte seulement si c'est une nouvelle entrée
       if (!vehiclesInDangerZoneRef.current.has(key)) {
         addAlert({
           vehicleId: vehicle.id,
@@ -96,231 +226,160 @@ export default function MapView() {
         });
 
         toast({
-          title: 'Alerte de sécurité !',
-          description: `${vehicle.modele} (${vehicle.id}) est entré dans ${geofence.nom}`,
+          title: 'Alerte !',
+          description: `${vehicle.modele} dans ${geofence.nom}`,
           variant: 'destructive',
         });
       }
     });
 
-    vehiclesInDangerZoneRef.current = currentVehiclesInDanger;
+    vehiclesInDangerZoneRef.current = current;
   }, [vehiclesWithPositions, geofences, addAlert]);
 
-  // Filtrer les véhicules selon les filtres actifs
+  // Filtrage véhicules
   const filteredVehicles = useMemo(() => {
     return vehiclesWithPositions.filter((vehicle) => {
-      const status = getFuelStatus(vehicle);
+      const { tripsData, refuels } = getTripsAndRefuels(vehicle.id);
+      const status = getFuelStatus(vehicle, tripsData, refuels);
       switch (status) {
-        case 'critical':
-          return filters.showCritical;
-        case 'low':
-          return filters.showLow;
-        case 'medium':
-          return filters.showMedium;
-        case 'high':
-          return filters.showHigh;
-        default:
-          return true;
+        case 'critical': return filters.showCritical;
+        case 'low': return filters.showLow;
+        case 'medium': return filters.showMedium;
+        case 'high': return filters.showHigh;
+        default: return true;
       }
     });
-  }, [vehiclesWithPositions, filters]);
+  }, [vehiclesWithPositions, filters, getTripsAndRefuels]);
 
-  // Déterminer quels véhicules sont actuellement en zone à risque
   const vehiclesInDangerZone = useMemo(() => {
-    const violations = detectDangerZoneViolations(vehiclesWithPositions, geofences);
-    return new Set(violations.map((v) => v.vehicle.id));
+    return new Set(
+      detectDangerZoneViolations(vehiclesWithPositions, geofences).map(v => v.vehicle.id)
+    );
   }, [vehiclesWithPositions, geofences]);
 
-  /**
-   * Gestion de la création d'une geofence
-   */
-  const handleGeofenceCreated = useCallback((e: any) => {
-    const { layerType, layer } = e;
-
-    if (layerType === 'circle') {
-      const center = layer.getLatLng();
-      const radius = layer.getRadius();
-
-      // Stocker temporairement les données
-      setPendingGeofenceData({
-        lat: center.lat,
-        lon: center.lng,
-        rayon_metres: radius,
-      });
-
-      // Ouvrir le dialog pour saisir nom et type
-      setDialogOpen(true);
-
-      // IMPORTANT: Supprimer le layer temporaire pour éviter la duplication
-      layer.remove();
-    }
-  }, []);
-
-  /**
-   * Sauvegarde de la geofence après validation du formulaire
-   */
-  const handleSaveGeofence = useCallback(
-    (name: string, type: GeofenceType) => {
-      // Mode édition: mise à jour du nom et du type
-      if (editingGeofence) {
-        updateGeofence(editingGeofence.id, {
-          nom: name,
-          type: type,
-        });
-        cancelEditing();
-        setDialogOpen(false);
-        return;
-      }
-
-      // Mode création: nouvelle geofence
-      if (pendingGeofenceData && name.trim()) {
-        const newGeofence: Geofence = {
-          id: Date.now(),
-          nom: name,
-          type: type,
-          lat: pendingGeofenceData.lat,
-          lon: pendingGeofenceData.lon,
-          rayon_metres: pendingGeofenceData.rayon_metres,
-        };
-
-        addGeofence(newGeofence);
-        setPendingGeofenceData(null);
-
-        toast({
-          title: 'Geofence créée',
-          description: `La zone "${name}" a été créée avec succès.`,
-        });
-      }
-    },
-    [pendingGeofenceData, editingGeofence, addGeofence, updateGeofence, cancelEditing]
-  );
-
-  /**
-   * Gestion de l'édition d'une geofence
-   */
-  const handleGeofenceEdited = useCallback(
-    (e: any) => {
-      const layers = e.layers;
-      layers.eachLayer((layer: any) => {
-        if (editingGeofence && layer.options && layer.options.geofenceId) {
-          const center = layer.getLatLng();
-          const radius = layer.getRadius();
-
-          updateGeofence(editingGeofence.id, {
-            lat: center.lat,
-            lon: center.lng,
-            rayon_metres: radius,
-          });
-
-          toast({
-            title: 'Geofence modifiée',
-            description: 'Les modifications ont été enregistrées.',
-          });
-        }
-      });
-    },
-    [editingGeofence, updateGeofence]
-  );
-
-  /**
-   * Gestion de la suppression d'une geofence
-   */
-  const handleGeofenceDeleted = useCallback(
-    (e: any) => {
-      if (editingGeofence) {
-        deleteGeofence(editingGeofence.id);
-        toast({
-          title: 'Geofence supprimée',
-          description: 'La zone a été supprimée avec succès.',
-        });
-      }
-    },
-    [editingGeofence, deleteGeofence]
-  );
-
-  /**
-   * Démarrer l'édition d'une geofence
-   */
-  const handleStartEditing = useCallback(
-    (geofence: Geofence) => {
-      // Ouvrir le dialogue pour permettre l'édition du nom et du type
-      startEditing(geofence);
-      setDialogOpen(true);
-    },
-    [startEditing]
-  );
-
-  /**
-   * Supprimer une geofence
-   */
-  const handleDeleteGeofence = useCallback(
-    async (id: number) => {
-      await deleteGeofence(id);
-    },
-    [deleteGeofence]
-  );
-
-  /**
-   * Mise à jour du rayon via drag du marker
-   */
-  const handleRadiusMarkerDrag = useCallback(
-    (geofenceId: number, center: [number, number], newPos: { lat: number; lng: number }) => {
-      const newRadius = calculateDistanceMeters(center, [newPos.lat, newPos.lng]);
-      updateGeofence(geofenceId, { rayon_metres: newRadius });
-    },
-    [updateGeofence]
-  );
-
-  /**
-   * Mise à jour du centre via drag du marker
-   */
-  const handleCenterMarkerDrag = useCallback(
-    (geofenceId: number, newCenter: { lat: number; lng: number }) => {
-      updateGeofence(geofenceId, { lat: newCenter.lat, lon: newCenter.lng });
-    },
-    [updateGeofence]
-  );
-
-  // Mémoïser les icônes pour éviter les rerenders
+  // Icônes mémorisées
   const vehicleIcons = useMemo(() => {
-    const icons: Record<string, ReturnType<typeof createCustomVehicleIcon>> = {};
-    filteredVehicles.forEach((vehicle) => {
-      const status = getFuelStatus(vehicle);
-      const color = getFuelStatusColor(status);
-      icons[vehicle.id] = createCustomVehicleIcon(color);
+    const icons: Record<number, any> = {};
+    filteredVehicles.forEach((v) => {
+      const { tripsData, refuels } = getTripsAndRefuels(v.id);
+      const status = getFuelStatus(v, tripsData, refuels);
+      icons[v.id] = createCustomVehicleIcon(getFuelStatusColor(status));
     });
     return icons;
-  }, [filteredVehicles]);
+  }, [filteredVehicles, getTripsAndRefuels]);
 
-  // Gérer l'ouverture du panneau d'alerte
-  const handleAlertButtonClick = useCallback(() => {
-    setShowAlertPanel(!showAlertPanel);
-    if (!showAlertPanel) {
-      markAllAsRead();
+  // Geofence temporaire (visible)
+  const handleGeofenceCreated = useCallback((e: any) => {
+    if (e.layerType !== 'circle') return;
+    const layer = e.layer;
+    const center = layer.getLatLng();
+
+    setTempLayer(layer);
+    setPendingGeofenceData({
+      lat: center.lat,
+      lon: center.lng,
+      rayon_metres: layer.getRadius(),
+    });
+    setDialogOpen(true);
+  }, []);
+
+  // Sauvegarde + nettoyage
+  const handleSaveGeofence = useCallback((name: string, type: GeofenceType) => {
+    if (editingGeofence) {
+      updateGeofence(editingGeofence.id, { nom: name, type });
+      cancelEditing();
+    } else if (pendingGeofenceData) {
+      addGeofence({
+        nom: name,
+        type,
+        lat: pendingGeofenceData.lat,
+        lon: pendingGeofenceData.lon,
+        rayon_metres: pendingGeofenceData.rayon_metres,
+      });
+      toast({ title: 'Geofence créée', description: name });
     }
+
+    // Nettoyage complet
+    setPendingGeofenceData(null);
+    setTempLayer(null);
+    setDialogOpen(false);
+  }, [pendingGeofenceData, editingGeofence, addGeofence, updateGeofence, cancelEditing]);
+
+  // Annulation propre
+  const handleCancelGeofence = useCallback(() => {
+    if (tempLayer) tempLayer.remove();
+    setTempLayer(null);
+    setPendingGeofenceData(null);
+    setDialogOpen(false);
+  }, [tempLayer]);
+
+  const handleGeofenceEdited = useCallback((e: any) => {
+    if (!editingGeofence) return;
+    e.layers.eachLayer((layer: any) => {
+      const center = layer.getLatLng();
+      updateGeofence(editingGeofence.id, {
+        lat: center.lat,
+        lon: center.lng,
+        rayon_metres: layer.getRadius(),
+      });
+    });
+  }, [editingGeofence, updateGeofence]);
+
+  const handleGeofenceDeleted = useCallback(() => {
+    if (editingGeofence) {
+      deleteGeofence(editingGeofence.id);
+      toast({ title: 'Supprimée', description: editingGeofence.nom });
+    }
+  }, [editingGeofence, deleteGeofence]);
+
+  const handleStartEditing = useCallback((g: Geofence) => {
+    startEditing(g);
+    setDialogOpen(true);
+  }, [startEditing]);
+
+  const handleRadiusMarkerDrag = useCallback((id: number, center: [number, number], e: any) => {
+    const newPos = e.target.getLatLng();
+    const newRadius = calculateDistanceMeters(center, [newPos.lat, newPos.lng]);
+    updateGeofence(id, { rayon_metres: newRadius });
+  }, [updateGeofence]);
+
+  const handleCenterMarkerDrag = useCallback((id: number, e: any) => {
+    const { lat, lng } = e.target.getLatLng();
+    updateGeofence(id, { lat, lon: lng });
+  }, [updateGeofence]);
+
+  const handleAlertButtonClick = useCallback(() => {
+    setShowAlertPanel(v => !v);
+    if (!showAlertPanel) markAllAsRead();
   }, [showAlertPanel, markAllAsRead]);
+
+  // RENDER
+  if (vehiclesLoading) {
+    return (
+      <MainLayout>
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-xl">Chargement de la flotte...</div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout>
-
       <div className="container mx-auto p-4 h-screen flex flex-col gap-4 max-w-full max-h-[90vh] overflow-x-hidden">
-        {/* Toolbar avec bouton d'alerte */}
-        <div className='flex flex-col justify-center item-center text-center md:flex-row md:justify-between gap-4'>
+        {/* Toolbar */}
+        <div className='flex flex-col justify-center text-center md:flex-row md:justify-between gap-4'>
           <div>
             <h1 className="text-2xl md:text-3xl font-bold lg:text-start">{t('map.title')}</h1>
-            <p className="text-sm text-muted-foreground">
-              {t('map.subtitle')}
-            </p>
+            <p className="text-sm text-muted-foreground">{t('map.subtitle')}</p>
           </div>
-          <div className="flex flex-row sm:flex-row items-start sm:items-center justify-center gap-2">
+          <div className="flex flex-row items-center justify-center gap-2">
             <MapToolbar
               isDrawing={isDrawing}
               isReadOnly={isReadOnly}
               onToggleDrawing={() => {
                 setIsDrawing(!isDrawing);
-                if (isDrawing) {
-                  cancelEditing();
-                }
+                if (isDrawing) cancelEditing();
               }}
               onToggleReadOnly={() => setIsReadOnly(!isReadOnly)}
             />
@@ -339,38 +398,26 @@ export default function MapView() {
                 {!hideLateralWin ? <ArrowUp /> : <ArrowDown />}
               </Button>
             </div>
-
           </div>
         </div>
 
-        {/* Dialog création geofence */}
+        {/* Dialog avec bouton Annuler */}
         <GeofenceDialog
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           onSave={handleSaveGeofence}
+          // onCancel={handleCancelGeofence}
           editingGeofence={editingGeofence}
         />
 
-        {/* Grille principale */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0 ">
-          {/* Carte */}
-          <div
-            className={`min-h-[400px] ${
-              hideLateralWin ? 'lg:col-span-3' : 'lg:col-span-4'
-            }`}
-          >
-
+        {/* Carte */}
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0">
+          <div className={`min-h-[400px] ${hideLateralWin ? 'lg:col-span-3' : 'lg:col-span-4'}`}>
             <Card className="h-full overflow-hidden">
               <CardContent className="p-0 h-full">
-                <MapContainer
-                  center={MAP_CENTER}
-                  zoom={6}
-                  scrollWheelZoom={true}
-                  style={{ height: '100%', width: '100%' }}
-                >
+                <MapContainer center={MAP_CENTER} zoom={6} scrollWheelZoom style={{ height: '100%', width: '100%' }}>
                   <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
 
-                  {/* Geofences avec EditControl */}
                   <FeatureGroup>
                     <EditControl
                       position="topright"
@@ -379,12 +426,7 @@ export default function MapView() {
                       onDeleted={handleGeofenceDeleted}
                       draw={{
                         circle: isDrawing && !isReadOnly && !editingGeofence
-                          ? {
-                              shapeOptions: {
-                                color: '#3b82f6',
-                                weight: 3,
-                              },
-                            }
+                          ? { shapeOptions: { color: '#3b82f6', weight: 3 } }
                           : false,
                         polygon: false,
                         rectangle: false,
@@ -392,23 +434,19 @@ export default function MapView() {
                         marker: false,
                         circlemarker: false,
                       }}
-                      edit={{
-                        edit: false,
-                        remove: false,
-                      }}
+                      edit={{ edit: false, remove: false }}
                     />
 
-                    {/* Affichage des geofences */}
+                    {/* Geofences persistantes */}
                     {geofences.map((geofence) => {
                       const isEditable = editingGeofence?.id === geofence.id;
-                      const isDangerZone = geofence.type === 'zone_risque';
-                      const hasVehiclesInside = isDangerZone && 
+                      const hasVehiclesInside = geofence.type === 'zone_risque' && 
                         vehiclesWithPositions.some(v => vehiclesInDangerZone.has(v.id));
 
                       return (
                         <Circle
                           key={geofence.id}
-                          center={[geofence.lat, geofence.lon]}
+                          center={[Number(geofence.lat), Number(geofence.lon)]}
                           radius={geofence.rayon_metres}
                           pathOptions={{
                             color: getGeofenceColor(geofence.type),
@@ -425,138 +463,99 @@ export default function MapView() {
                             },
                           }}
                         >
-                          {/* Marker centre (draggable en édition) */}
                           {isEditable && (
-                            <Marker
-                              position={[geofence.lat, geofence.lon]}
-                              icon={createLucideDivIcon(Move, getGeofenceColor(geofence.type), 33)}
-                              draggable={true}
-                              eventHandlers={{
-                                dragend: (e) => {
-                                  const newCenter = e.target.getLatLng();
-                                  handleCenterMarkerDrag(geofence.id, newCenter);
-                                },
-                              }}
-                            />
+                            <>
+                              <Marker
+                                position={[Number(geofence.lat), Number(geofence.lon)]}
+                                icon={createLucideDivIcon(Move, getGeofenceColor(geofence.type), 33)}
+                                draggable
+                                eventHandlers={{
+                                  dragend: (e) => handleCenterMarkerDrag(geofence.id, e),
+                                }}
+                              />
+                              <Marker
+                                position={getRadiusMarkerPosition([Number(geofence.lat), Number(geofence.lon)], geofence.rayon_metres)}
+                                icon={createLucideDivIcon(Move, getGeofenceColor(geofence.type), 33)}
+                                draggable
+                                eventHandlers={{
+                                  dragend: (e) => handleRadiusMarkerDrag(geofence.id, [Number(geofence.lat), Number(geofence.lon)], e),
+                                }}
+                              />
+                            </>
                           )}
-
-                          {/* Marker rayon (draggable en édition) */}
-                          {isEditable && (
-                            <Marker
-                              position={getRadiusMarkerPosition(
-                                [geofence.lat, geofence.lon],
-                                geofence.rayon_metres
-                              )}
-                              icon={createLucideDivIcon(Move, getGeofenceColor(geofence.type), 33)}
-                              draggable={true}
-                              eventHandlers={{
-                                dragend: (e) => {
-                                  const newPos = e.target.getLatLng();
-                                  handleRadiusMarkerDrag(
-                                    geofence.id,
-                                    [geofence.lat, geofence.lon],
-                                    newPos
-                                  );
-                                },
-                              }}
-                            />
-                          )}
-
-                          {/* Popup */}
                           <Popup>
-                            <div className="min-w-[200px] p-2">
-                              <h3 className="font-semibold text-base mb-2">{geofence.nom}</h3>
+                            <div className="p-2">
+                              <h3 className="font-semibold">{geofence.nom}</h3>
                               <Badge style={{ backgroundColor: getGeofenceColor(geofence.type) }}>
-                                {geofence.type === 'depot'
-                                  ? 'Dépôt'
-                                  : geofence.type === 'station'
-                                  ? 'Station'
-                                  : 'Zone à Risque'}
+                                {geofence.type === 'depot' ? 'Dépôt' : geofence.type === 'station' ? 'Station' : 'Zone à Risque'}
                               </Badge>
                             </div>
                           </Popup>
                         </Circle>
                       );
                     })}
+
+                    {/* Geofence temporaire (en cours de création) */}
+                    {tempLayer && (
+                      <Circle
+                        center={tempLayer.getLatLng()}
+                        radius={tempLayer.getRadius()}
+                        pathOptions={{
+                          color: '#3b82f6',
+                          weight: 4,
+                          opacity: 0.8,
+                          fillOpacity: 0.3,
+                          dashArray: '10, 10',
+                        }}
+                      />
+                    )}
                   </FeatureGroup>
 
-                  {/* Marqueurs véhicules */}
+                  {/* Véhicules */}
                   {filteredVehicles.map((vehicle) => {
-                    const fuelStatus = getFuelStatus(vehicle);
-                    const remainingFuel = calculateFuelRemaining(vehicle);
+                    const { tripsData, refuels } = getTripsAndRefuels(vehicle.id);
+                    const fuelStatus = getFuelStatus(vehicle, tripsData, refuels);
+                    const remainingFuel = calculateFuelRemaining(vehicle, tripsData, refuels);
                     const autonomy = (remainingFuel / vehicle.consommation_nominale) * 100;
                     const isInDangerZone = vehiclesInDangerZone.has(vehicle.id);
-
-                    const tripsData = getTripsByVehicleId(vehicle.id);
-                    
-                    // Sélection du dernier trajet
-                    const lastTrip = tripsData && tripsData.length > 0 ? tripsData[tripsData.length - 1] : null;
-
-                    // Récupération du dernier point GPS
-                    const lastPosition =
-                      lastTrip?.traceGps && lastTrip.traceGps.length > 0
-                        ? lastTrip.traceGps[lastTrip.traceGps.length - 1]
-                        : null;
+                    const lastTrip = tripsData[tripsData.length - 1];
+                    const lastPosition = lastTrip?.traceGps?.[lastTrip.traceGps.length - 1];
 
                     return (
                       <div key={vehicle.id}>
                         <Marker
-                          key={vehicle.id}
-                          position={
-                            lastPosition ? [lastPosition.latitude, lastPosition.longitude] : [0, 0]
-                          }
+                          position={lastPosition ? [lastPosition.latitude, lastPosition.longitude] : vehicle.position}
                           icon={vehicleIcons[vehicle.id]}
                         >
                           <Popup>
                             <div className="min-w-[200px] p-2">
                               {isInDangerZone && (
-                                <div className="mb-2 p-2 bg-destructive/10 border border-destructive rounded-md">
-                                  <div className="flex items-center gap-2 text-destructive">
+                                <div className="mb-2 p-2 bg-red-100 border border-red-400 rounded">
+                                  <div className="flex items-center gap-2 text-red-600">
                                     <AlertTriangle className="h-4 w-4" />
-                                    <span className="text-xs font-semibold">En zone à risque</span>
+                                    <span className="text-xs font-bold">En zone à risque</span>
                                   </div>
                                 </div>
                               )}
-                              <div className="flex items-center justify-between mb-2">
-                                <h3 className="font-semibold text-base">{vehicle.modele}</h3>
-                                <Badge
-                                  variant={
-                                    fuelStatus === 'critical' || fuelStatus === 'low'
-                                      ? 'destructive'
-                                      : 'secondary'
-                                  }
-                                  className="ml-2"
-                                >
+                              <div className="flex justify-between mb-2">
+                                <h3 className="font-semibold">{vehicle.modele}</h3>
+                                <Badge variant={fuelStatus === 'critical' || fuelStatus === 'low' ? 'destructive' : 'secondary'}>
                                   {getFuelStatusLabel(fuelStatus)}
                                 </Badge>
                               </div>
-                              <div className="space-y-1 text-sm">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-muted-foreground">Immatriculation:</span>
-                                  <span className="font-medium">{vehicle.id}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Fuel className="h-4 w-4 text-muted-foreground" />
-                                  <span className="font-medium">{remainingFuel.toFixed(1)}L</span>
-                                  <span className="text-muted-foreground">
-                                    / {vehicle.capacite_reservoir}L
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Navigation className="h-4 w-4 text-muted-foreground" />
-                                  <span className="font-medium">{autonomy.toFixed(0)} km</span>
-                                  <span className="text-muted-foreground">autonomie</span>
-                                </div>
+                              <div className="text-sm space-y-1">
+                                <div>Immat: <strong>{vehicle.immatriculation}</strong></div>
+                                <div><Fuel className="inline h-4 w-4" /> {remainingFuel.toFixed(1)}L</div>
+                                <div><Navigation className="inline h-4 w-4" /> {autonomy.toFixed(0)} km</div>
                               </div>
                             </div>
                           </Popup>
                         </Marker>
-                        
-                        {/* Icône d'alerte au-dessus du véhicule en danger */}
+
                         {isInDangerZone && (
                           <Marker
                             position={vehicle.position}
-                            icon={createLucideDivIcon(AlertTriangle, '#ef4444', 24)}
+                            icon={createLucideDivIcon(AlertTriangle, '#ef4444', 28)}
                             zIndexOffset={1000}
                           />
                         )}
@@ -586,7 +585,7 @@ export default function MapView() {
                   isEditing={editingGeofence?.id === selectedGeofence?.id}
                   isReadOnly={isReadOnly}
                   onEdit={handleStartEditing}
-                  onDelete={handleDeleteGeofence}
+                  onDelete={() => selectedGeofence && deleteGeofence(selectedGeofence.id)}
                   onClose={() => {
                     setSelectedGeofence(null);
                     cancelEditing();

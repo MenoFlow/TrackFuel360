@@ -4,13 +4,11 @@ import { genererRapport } from '@/lib/services/rapportService';
 import { mockVehicules, mockSites, mockUsers } from '@/lib/data/mockData.base';
 import { mockTrajets } from '@/lib/data/mockData.trajectories';
 import { mockPleins } from '@/lib/data/mockData.fuel';
-import { mockAlertes } from '@/lib/mockData';
+// import { allAlertes } from '@/lib/mockData';
 import { mockCorrections } from '@/lib/data/mockData.corrections';
+import * as rapportStorage from '@/lib/services/rapportStorage';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-// Stockage local des rapports générés avec données complètes
-let rapportsGeneres: RapportData[] = [];
 
 /**
  * Hook pour générer un rapport
@@ -28,6 +26,7 @@ export const useGenererRapport = () => {
       filtres: RapportFilters;
       currentUser: any;
     }): Promise<RapportData> => {
+      console.log('[useRapports] Début génération rapport:', { type, filtres });
       await delay(800); // Simulation génération
       
       const rapport = genererRapport(
@@ -36,14 +35,19 @@ export const useGenererRapport = () => {
         mockVehicules,
         mockTrajets,
         mockPleins,
-        mockAlertes,
+        // allAlertes,
         mockCorrections,
         mockSites,
         currentUser
       );
       
-      // Stocker le rapport complet (avec données) pour l'historique
-      rapportsGeneres = [rapport, ...rapportsGeneres].slice(0, 50); // Max 50 rapports
+      console.log('[useRapports] Rapport généré:', rapport.metadata.id);
+      
+      // Nettoyer les rapports expirés avant d'ajouter le nouveau
+      await rapportStorage.cleanupExpiredRapports();
+      
+      // Stocker le rapport dans IndexedDB
+      await rapportStorage.storeRapport(rapport);
       
       return rapport;
     },
@@ -60,8 +64,10 @@ export const useHistoriqueRapports = () => {
   return useQuery({
     queryKey: ['rapports-historique'],
     queryFn: async (): Promise<RapportMetadata[]> => {
+      console.log('[useRapports] Récupération historique rapports');
       await delay(300);
-      return rapportsGeneres.map(r => r.metadata);
+      const rapports = await rapportStorage.getAllRapports();
+      return rapports.map(r => r.metadata);
     },
   });
 };
@@ -73,8 +79,17 @@ export const useRapport = (rapportId: string) => {
   return useQuery({
     queryKey: ['rapport', rapportId],
     queryFn: async (): Promise<RapportData | null> => {
+      console.log('[useRapports] Recherche rapport:', rapportId);
       await delay(200);
-      return rapportsGeneres.find(r => r.metadata.id === rapportId) || null;
+      const entry = await rapportStorage.getRapport(rapportId);
+      
+      if (entry) {
+        console.log('[useRapports] Rapport trouvé:', entry.rapport.metadata.titre);
+        return entry.rapport;
+      } else {
+        console.warn('[useRapports] Rapport introuvable:', rapportId);
+        return null;
+      }
     },
     enabled: !!rapportId
   });
@@ -88,8 +103,9 @@ export const useSupprimerRapport = () => {
   
   return useMutation({
     mutationFn: async (rapportId: string): Promise<void> => {
+      console.log('[useRapports] Suppression rapport:', rapportId);
       await delay(200);
-      rapportsGeneres = rapportsGeneres.filter(r => r.metadata.id !== rapportId);
+      await rapportStorage.deleteRapport(rapportId);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rapports-historique'] });
@@ -105,8 +121,9 @@ export const useViderHistorique = () => {
   
   return useMutation({
     mutationFn: async (): Promise<void> => {
+      console.log('[useRapports] Vidage historique');
       await delay(200);
-      rapportsGeneres = [];
+      await rapportStorage.clearAllRapports();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rapports-historique'] });

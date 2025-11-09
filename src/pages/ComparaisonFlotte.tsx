@@ -7,8 +7,8 @@ import { Download, TrendingUp, TrendingDown } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { useTranslation } from 'react-i18next';
-import { mockVehicules, mockTrajets, mockPleins, mockNiveauxCarburant, mockUsers, mockSites } from '@/lib/mockData';
-import { calculerComparaisonFlotte, calculerMoyenneFlotte, ComparaisonVehicule } from '@/lib/services/comparaisonService';
+import { useAggregatedData } from '@/lib/mockData';
+import { calculerComparaisonFlotte, calculerMoyenneFlotte } from '@/lib/services/comparaisonService';
 import * as XLSX from 'xlsx';
 import { motion } from 'framer-motion';
 import { staggerContainer, staggerItem } from '@/lib/utils/motionVariants';
@@ -17,6 +17,7 @@ import { MotionWrapper } from '@/components/Layout/MotionWrapper';
 type TriType = 'ecart_desc' | 'ecart_asc' | 'consommation_desc' | 'consommation_asc' | 'cout_desc' | 'cout_asc';
 
 const ComparaisonFlotte = () => {
+  const { vehicules, trajets, pleins, niveauxCarburant, users, sites } = useAggregatedData()
   const { t } = useTranslation();
   const [periode, setPeriode] = useState<number>(30);
   const [siteFilter, setSiteFilter] = useState<string>('all');
@@ -26,12 +27,12 @@ const ComparaisonFlotte = () => {
   // Calcul des données de comparaison
   const comparaisons = useMemo(() => {
     return calculerComparaisonFlotte(
-      mockVehicules,
-      mockTrajets,
-      mockNiveauxCarburant,
-      mockPleins,
-      mockUsers,
-      mockSites,
+      vehicules,
+      trajets,
+      niveauxCarburant,
+      pleins,
+      users,
+      sites,
       periode
     );
   }, [periode]);
@@ -81,7 +82,7 @@ const ComparaisonFlotte = () => {
   const moyenneCout = calculerMoyenneFlotte(comparaisonsFiltrees, 'cout_par_km');
 
   // Listes pour filtres
-  const sites = useMemo(() => {
+  const sitesMemo = useMemo(() => {
     const sitesUniques = new Set(comparaisons.map(c => c.site_nom).filter(Boolean));
     return Array.from(sitesUniques);
   }, [comparaisons]);
@@ -178,7 +179,7 @@ const ComparaisonFlotte = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('comparison.allSites')}</SelectItem>
-                    {sites.map(site => (
+                    {sitesMemo.map(site => (
                       <SelectItem key={site} value={site!}>{site}</SelectItem>
                     ))}
                   </SelectContent>

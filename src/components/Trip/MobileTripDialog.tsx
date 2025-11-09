@@ -16,11 +16,11 @@ import { Trip } from "@/types/trip";
 import { useTranslation } from "react-i18next";
 
 interface MobileTripDialogProps {
-  vehiculeId: string;
+  vehiculeId: number;
   trips: Trip[];
   isLoading: boolean;
   onEdit: (trip: Trip) => void;
-  onDelete: (id: string) => void;
+  onDelete: (id: number) => void;
   isDeleting: boolean;
 }
 

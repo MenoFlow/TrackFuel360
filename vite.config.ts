@@ -10,10 +10,15 @@ export default defineConfig(({ mode }) => ({
     allowedHosts: true,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'http://92.112.181.198:8086',
         changeOrigin: true,
-        secure: false
-      }
+        secure: false,
+      },
+      '/uploads': {
+        target: 'http://92.112.181.198:8086',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 

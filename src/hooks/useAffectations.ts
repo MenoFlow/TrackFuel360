@@ -1,48 +1,57 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Affectation } from '@/types';
-import { mockAffectations } from '@/lib/data/mockData.base';
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const API_BASE_URL = '/api/affectations';
 
+// GET ALL + FILTER
 export const useAffectations = (chauffeurId?: number, vehiculeId?: number) => {
   return useQuery({
-    queryKey: chauffeurId 
+    queryKey: chauffeurId
       ? ['affectations', 'chauffeur', chauffeurId]
       : vehiculeId
       ? ['affectations', 'vehicule', vehiculeId]
       : ['affectations'],
     queryFn: async (): Promise<Affectation[]> => {
-      await delay(300);
-      if (chauffeurId) {
-        return mockAffectations.filter(a => a.chauffeur_id === chauffeurId);
-      }
-      if (vehiculeId) {
-        return mockAffectations.filter(a => a.vehicule_id === vehiculeId);
-      }
-      return mockAffectations;
+      const res = await fetch(API_BASE_URL);
+      if (!res.ok) throw new Error('Erreur réseau');
+      const data: Affectation[] = await res.json();
+
+      if (chauffeurId) return data.filter(a => a.chauffeur_id === chauffeurId);
+      if (vehiculeId) return data.filter(a => a.vehicule_id === vehiculeId);
+      return data;
     },
   });
 };
 
+// GET ONE
 export const useAffectation = (id: number) => {
   return useQuery({
     queryKey: ['affectations', id],
-    queryFn: async (): Promise<Affectation | undefined> => {
-      await delay(200);
-      return mockAffectations.find(a => a.id === id);
+    queryFn: async (): Promise<Affectation> => {
+      const res = await fetch(`${API_BASE_URL}/${id}`);
+      if (!res.ok) throw new Error('Affectation non trouvée');
+      return res.json();
     },
     enabled: !!id,
   });
 };
 
+// CREATE
 export const useCreateAffectation = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (newAffectation: Omit<Affectation, 'id'>): Promise<Affectation> => {
-      await delay(500);
-      const affectation = { ...newAffectation, id: Date.now() };
-      return affectation;
+      const res = await fetch(API_BASE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newAffectation),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Erreur serveur' }));
+        throw new Error(err.error || 'Échec création');
+      }
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['affectations'] });
@@ -50,15 +59,22 @@ export const useCreateAffectation = () => {
   });
 };
 
+// UPDATE
 export const useUpdateAffectation = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<Affectation> }): Promise<Affectation> => {
-      await delay(500);
-      const affectation = mockAffectations.find(a => a.id === id);
-      if (!affectation) throw new Error('Affectation non trouvée');
-      return { ...affectation, ...data };
+      const res = await fetch(`${API_BASE_URL}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Erreur serveur' }));
+        throw new Error(err.error || 'Échec mise à jour');
+      }
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['affectations'] });
@@ -66,14 +82,19 @@ export const useUpdateAffectation = () => {
   });
 };
 
+// DELETE
 export const useDeleteAffectation = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (id: number): Promise<void> => {
-      await delay(500);
-      const index = mockAffectations.findIndex(a => a.id === id);
-      if (index === -1) throw new Error('Affectation non trouvée');
+      const res = await fetch(`${API_BASE_URL}/${id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok && res.status !== 404) {
+        const err = await res.json().catch(() => ({ error: 'Erreur serveur' }));
+        throw new Error(err.error || 'Échec suppression');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['affectations'] });

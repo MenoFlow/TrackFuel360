@@ -4,29 +4,38 @@
  */
 
 export interface TripGPSPoint {
-  id: string;
-  trajet_id: string;
+  id?: number;
+  trajet_id: number;
   sequence: number;
   latitude: number;
   longitude: number;
   timestamp: string; // ISO datetime string
 }
-
+export type SaisieType = 'auto' | 'manuelle';
+export interface TraceGPSPoint {
+  id: number;
+  trajet_id: number;
+  sequence: number;
+  latitude: number;
+  longitude: number;
+  timestamp: string;
+  traceGps?: any;
+}
 export interface Trip {
-  id: string;
-  vehicule_id: string;
-  chauffeur_id: string;
-  date_debut: string; // ISO datetime string
-  date_fin: string; // ISO datetime string
+  id: number;
+  vehicule_id: number;
+  chauffeur_id: number;
+  date_debut: string; // ISO: '2025-10-07T08:00:00Z'
+  date_fin: string;   // ISO: '2025-10-07T12:15:00Z'
   distance_km: number;
-  type_saisie: "auto" | "manuelle";
-  traceGps?: TripGPSPoint[];
-  created_at?: string; // ISO datetime string
+  type_saisie: SaisieType;
+  traceGps?: TraceGPSPoint[]; // Optionnel : tableau de points GPS
+  created_at?: any;
 }
 
 export interface TripInput {
-  vehicule_id: string;
-  chauffeur_id: string;
+  vehicule_id: number;
+  chauffeur_id: number;
   date_debut: string;
   date_fin: string;
   distance_km: number;

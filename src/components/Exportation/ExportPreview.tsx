@@ -2,8 +2,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Download, X } from "lucide-react";
-import { mockDataByType } from "@/lib/mockData";
 import { MotionLayout } from "../Layout/MotionLayout";
+import { PreviewTable } from "./PreviewTable";
 import { useTranslation } from "react-i18next";
 
 interface ExportPreviewProps {
@@ -11,13 +11,14 @@ interface ExportPreviewProps {
   onClose: () => void;
   selectedTypes: string[];
   onConfirm: () => void;
+  dataByType: Record<string, any[]>;
 }
 
-export const ExportPreview = ({ open, onClose, selectedTypes, onConfirm }: ExportPreviewProps) => {
+export const ExportPreview = ({ open, onClose, selectedTypes, onConfirm, dataByType }: ExportPreviewProps) => {
   const { t } = useTranslation();
   
   const previewData = selectedTypes.map((type) => {
-    const data = mockDataByType[type as keyof typeof mockDataByType] || [];
+    const data = dataByType[type as keyof typeof dataByType] || [];
     const items = Array.isArray(data) ? data : [data];
     return { type, items: items.slice(0, 5), total: items.length };
   });
@@ -35,38 +36,7 @@ export const ExportPreview = ({ open, onClose, selectedTypes, onConfirm }: Expor
           <div className="space-y-6">
             {previewData.map(({ type, items, total }) => (
               <MotionLayout key={type} variant="fade">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-foreground">{t(`dataTypes.${type}`)}</h4>
-                    <span className="text-sm text-muted-foreground">{total} {t('export.totalRows')}</span>
-                  </div>
-                  <div className="border border-border rounded-lg overflow-hidden">
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-sm">
-                        <thead className="bg-muted/50">
-                          <tr>
-                            {items[0] && Object.keys(items[0]).map((key) => (
-                              <th key={key} className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">
-                                {key}
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {items.map((item, idx) => (
-                            <tr key={idx} className="border-t border-border">
-                              {Object.values(item).map((value, vidx) => (
-                                <td key={vidx} className="px-3 py-2 text-xs text-foreground truncate max-w-[200px]">
-                                  {String(value)}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
+                <PreviewTable type={type} items={items} total={total} />
               </MotionLayout>
             ))}
           </div>

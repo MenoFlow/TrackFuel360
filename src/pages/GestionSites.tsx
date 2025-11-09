@@ -1,3 +1,4 @@
+// src/pages/GestionSites.tsx
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/Layout/MainLayout';
@@ -11,13 +12,14 @@ import { useSites, useDeleteSite } from '@/hooks/useSites';
 import { SiteFormDialog } from '@/components/Sites/SiteFormDialog';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { Site } from '@/types';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 
 const GestionSites = () => {
   const { t } = useTranslation();
   const { data: sites, isLoading } = useSites();
   const deleteSite = useDeleteSite();
-  
+  const { toast } = useToast();
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSite, setSelectedSite] = useState<Site | undefined>();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -38,24 +40,18 @@ const GestionSites = () => {
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteConfirm = async () => {
+  const handleDeleteConfirm = () => {
     if (!siteToDelete) return;
-    
-    try {
-      await deleteSite.mutateAsync(siteToDelete.id);
-      toast({
-        title: t('sites.deleteSuccess'),
-        description: t('sites.deleteSuccessDesc'),
-      });
-      setDeleteDialogOpen(false);
-      setSiteToDelete(null);
-    } catch (error) {
-      toast({
-        title: t('errors.generic'),
-        description: t('sites.deleteError'),
-        variant: 'destructive',
-      });
-    }
+    deleteSite.mutate(siteToDelete.id, {
+      onSuccess: () => {
+        toast({ title: t('sites.deleteSuccess') });
+        setDeleteDialogOpen(false);
+        setSiteToDelete(null);
+      },
+      onError: () => {
+        toast({ title: t('sites.deleteError'), variant: 'destructive' });
+      },
+    });
   };
 
   return (
@@ -153,6 +149,7 @@ const GestionSites = () => {
         confirmText={t('common.delete')}
         icon={Trash2}
         onConfirm={handleDeleteConfirm}
+        isLoading={deleteSite.isPending}
       />
     </MainLayout>
   );

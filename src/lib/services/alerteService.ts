@@ -29,6 +29,7 @@ export function generateAlertes(
 ): Alerte[] {
   const alertes: Alerte[] = [];
   
+  
   // Stations autorisées et dépôts
   const stationsAutorisees = geofences
     .filter(g => g.type === 'station')
@@ -49,9 +50,9 @@ export function generateAlertes(
   
   // 2. Vérifier les EXIF suspects
   pleins.forEach(plein => {
-    const exifData = pleinExifMetadata.find(e => e.plein_id === plein.id);
-    const alerteExif = detectExifSuspect(plein, exifData, params.seuil_exif_heures);
-    if (alerteExif) alertes.push(alerteExif);
+    const exifItem = pleinExifMetadata.find(e => e.plein_id === plein.id);
+    const alerte = detectExifSuspect(plein, exifItem ?? null, params.seuil_exif_heures);
+    if (alerte) alertes.push(alerte);
   });
   
   // 3. Vérifier écarts GPS vs odomètre

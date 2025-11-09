@@ -11,13 +11,16 @@ import { mockNiveauxCarburant, mockPleins } from '@/lib/data/mockData.fuel';
 /**
  * Génère un rapport selon le type et les filtres
  */
+/**
+ * Génère un rapport selon le type et les filtres
+ */
 export function genererRapport(
   type: RapportType,
   filtres: RapportFilters,
   vehicules: Vehicule[],
   trajets: Trajet[],
   pleins: Plein[],
-  alertes: Alerte[],
+  // alertes: Alerte[],          // Temporairement désactivé
   corrections: Correction[],
   sites: Site[],
   currentUser: User
@@ -40,7 +43,11 @@ export function genererRapport(
   // Filtrer les données selon les critères
   const trajetsFiltered = filtrerTrajets(trajets, filtres);
   const pleinsFiltered = filtrerPleins(pleins, filtres);
-  const alertesFiltered = filtrerAlertes(alertes, filtres);
+  
+  // PARTIE COMMENTÉE : alertes pas encore disponibles
+  // const alertesFiltered = filtrerAlertes(alertes, filtres);
+  const alertesFiltered: Alerte[] = []; // Mock vide pour éviter les erreurs
+  // const correctionsFiltered = filtrerCorrections(corrections, filtres);
   const correctionsFiltered = filtrerCorrections(corrections, filtres);
 
   switch (type) {
@@ -56,11 +63,12 @@ export function genererRapport(
       ));
       break;
     
-    case 'anomalies':
-      ({ donnees, statistiques } = genererRapportAnomalies(
-        alertesFiltered, vehicules, filtres
-      ));
-      break;
+    // PARTIE COMMENTÉE : dépend des alertes
+    // case 'anomalies':
+    //   ({ donnees, statistiques } = genererRapportAnomalies(
+    //     alertesFiltered, vehicules, filtres
+    //   ));
+    //   break;
     
     case 'corrections':
       ({ donnees, statistiques } = genererRapportCorrections(
@@ -85,7 +93,6 @@ export function genererRapport(
 
   return { metadata, donnees, statistiques };
 }
-
 /**
  * Rapport mensuel par site/véhicule/chauffeur
  */
@@ -117,7 +124,7 @@ function genererRapportMensuel(
       const site = sites.find(s => s.id === vehicule.site_id);
 
       return {
-        immatriculation: vehicule.id,
+        immatriculation: vehicule.immatriculation,
         modele: vehicule.modele,
         site: site?.nom || 'N/A',
         nb_trajets: trajetsVehicule.length,
@@ -174,7 +181,7 @@ function genererRapportTopEcarts(
       const totalLitres = pleinsVehicule.reduce((sum, p) => sum + p.litres, 0);
 
       return {
-        immatriculation: vehicule.id,
+        immatriculation: vehicule.immatriculation,
         modele: vehicule.modele,
         consommation_nominale: vehicule.consommation_nominale,
         consommation_reelle: Number(consommationMoyenne.toFixed(1)),
@@ -203,45 +210,45 @@ function genererRapportTopEcarts(
 /**
  * Rapport des anomalies détectées
  */
-function genererRapportAnomalies(
-  alertes: Alerte[],
-  vehicules: Vehicule[],
-  filtres: RapportFilters
-) {
-  const donnees = alertes.map(alerte => {
-    const vehicule = vehicules.find(v => v.id === alerte.vehicule_id);
+// function genererRapportAnomalies(
+//   alertes: Alerte[],
+//   vehicules: Vehicule[],
+//   filtres: RapportFilters
+// ) {
+//   const donnees = alertes.map(alerte => {
+//     const vehicule = vehicules.find(v => v.id === alerte.vehicule_id);
     
-    return {
-      date: format(new Date(alerte.date_detection), 'dd/MM/yyyy HH:mm', { locale: fr }),
-      vehicule: vehicule?.immatriculation || 'N/A',
-      type: alerte.type,
-      description: alerte.description,
-      score: alerte.score,
-      statut: alerte.status,
-      details: alerte.justification || '',
-      date_resolution: alerte.resolved_at 
-        ? format(new Date(alerte.resolved_at), 'dd/MM/yyyy HH:mm', { locale: fr })
-        : 'En cours'
-    };
-  });
+//     return {
+//       date: format(new Date(alerte.date_detection), 'dd/MM/yyyy HH:mm', { locale: fr }),
+//       vehicule: vehicule?.immatriculation || 'N/A',
+//       type: alerte.type,
+//       description: alerte.description,
+//       score: alerte.score,
+//       statut: alerte.status,
+//       details: alerte.justification || '',
+//       date_resolution: alerte.resolved_at 
+//         ? format(new Date(alerte.resolved_at), 'dd/MM/yyyy HH:mm', { locale: fr })
+//         : 'En cours'
+//     };
+//   });
 
-  const statistiques = {
-    nb_anomalies: donnees.length,
-    nb_resolues: alertes.filter(a => a.status === 'resolved').length,
-    nb_en_cours: alertes.filter(a => a.status === 'new' || a.status === 'in_progress').length,
-    score_moyen: donnees.length > 0 
-      ? donnees.reduce((sum, d) => sum + d.score, 0) / donnees.length 
-      : 0,
-    repartition_types: Object.entries(
-      alertes.reduce((acc, a) => {
-        acc[a.type] = (acc[a.type] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>)
-    ).map(([type, count]) => ({ type, count }))
-  };
+//   const statistiques = {
+//     nb_anomalies: donnees.length,
+//     nb_resolues: alertes.filter(a => a.status === 'resolved').length,
+//     nb_en_cours: alertes.filter(a => a.status === 'new' || a.status === 'in_progress').length,
+//     score_moyen: donnees.length > 0 
+//       ? donnees.reduce((sum, d) => sum + d.score, 0) / donnees.length 
+//       : 0,
+//     repartition_types: Object.entries(
+//       alertes.reduce((acc, a) => {
+//         acc[a.type] = (acc[a.type] || 0) + 1;
+//         return acc;
+//       }, {} as Record<string, number>)
+//     ).map(([type, count]) => ({ type, count }))
+//   };
 
-  return { donnees, statistiques };
-}
+//   return { donnees, statistiques };
+// }
 
 /**
  * Rapport des corrections validées/rejetées
@@ -343,11 +350,14 @@ function genererRapportComparaison(
 /**
  * Rapport de KPI globaux
  */
+/**
+ * Rapport de KPI globaux
+ */
 function genererRapportKPI(
   vehicules: Vehicule[],
   trajets: Trajet[],
   pleins: Plein[],
-  alertes: Alerte[],
+  alertes: Alerte[], // peut être vide
   corrections: Correction[],
   filtres: RapportFilters
 ) {
@@ -358,6 +368,7 @@ function genererRapportKPI(
   const consommationMoyenne = totalDistance > 0 ? (totalLitres / totalDistance) * 100 : 0;
   const coutParKm = totalDistance > 0 ? totalCout / totalDistance : 0;
   
+  // OK même si alertes = []
   const nbAnomalies = alertes.length;
   const nbAnomaliesResolues = alertes.filter(a => a.status === 'resolved').length;
   const tauxResolution = nbAnomalies > 0 ? (nbAnomaliesResolues / nbAnomalies * 100) : 0;
@@ -386,10 +397,8 @@ function genererRapportKPI(
   }];
 
   const statistiques = donnees[0];
-
   return { donnees, statistiques };
 }
-
 // Fonctions utilitaires de filtrage
 function filtrerTrajets(trajets: Trajet[], filtres: RapportFilters): Trajet[] {
   return trajets.filter(t => {
@@ -411,16 +420,16 @@ function filtrerPleins(pleins: Plein[], filtres: RapportFilters): Plein[] {
   });
 }
 
-function filtrerAlertes(alertes: Alerte[], filtres: RapportFilters): Alerte[] {
-  return alertes.filter(a => {
-    if (filtres.date_debut && new Date(a.date_detection) < new Date(filtres.date_debut)) return false;
-    if (filtres.date_fin && new Date(a.date_detection) > new Date(filtres.date_fin)) return false;
-    if (filtres.vehicule_id && a.vehicule_id !== filtres.vehicule_id) return false;
-    if (filtres.type_anomalie && a.type !== filtres.type_anomalie) return false;
-    if (filtres.score_minimum && a.score < filtres.score_minimum) return false;
-    return true;
-  });
-}
+// function filtrerAlertes(alertes: Alerte[], filtres: RapportFilters): Alerte[] {
+//   return alertes.filter(a => {
+//     if (filtres.date_debut && new Date(a.date_detection) < new Date(filtres.date_debut)) return false;
+//     if (filtres.date_fin && new Date(a.date_detection) > new Date(filtres.date_fin)) return false;
+//     if (filtres.vehicule_id && a.vehicule_id !== filtres.vehicule_id) return false;
+//     if (filtres.type_anomalie && a.type !== filtres.type_anomalie) return false;
+//     if (filtres.score_minimum && a.score < filtres.score_minimum) return false;
+//     return true;
+//   });
+// }
 
 function filtrerCorrections(corrections: Correction[], filtres: RapportFilters): Correction[] {
   return corrections.filter(c => {

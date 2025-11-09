@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Vehicule } from '@/types';
 import { useNavigate } from 'react-router-dom';
 import { useChauffeurAccess } from '@/hooks/useChauffeurAccess';
 import { useVehicules } from '@/hooks/useVehicules';
@@ -37,9 +38,9 @@ export default function AjoutPleinForm() {
 
   if (!currentUser) return null;
 
-  const mesVehicules = allVehicules && affectations 
-    ? filterVehiculesForDriver(allVehicules, affectations) 
-    : [];
+  const mesVehicules: Vehicule[] = allVehicules && affectations 
+  ? filterVehiculesForDriver(allVehicules, affectations) 
+  : [];
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -49,30 +50,46 @@ export default function AjoutPleinForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+  
     try {
       await createPlein.mutateAsync({
-        vehicule_id: vehiculeId,
-        chauffeur_id: currentUser?.id || null,
+        vehicule_id: Number(vehiculeId),
+        chauffeur_id: currentUser?.id || 0,
         date,
         litres: parseFloat(litres),
         prix_unitaire: parseFloat(prixUnitaire),
         odometre: parseInt(odometre),
         station,
-        photo_bon: photo ? URL.createObjectURL(photo) : undefined,
+        photo_bon: photo || undefined,
         type_saisie: 'manuelle',
-      });
-
+        latitude: null,
+        longitude: null,
+      } as any);
+  
       toast({
         title: isOnline ? t('driver.fuelRecorded') : t('offline.status.savedLocally'),
         description: isOnline ? t('driver.fuelRecordedDesc') : t('offline.willSyncLater'),
       });
-
+  
       navigate('/chauffeur');
-    } catch (error) {
+    } catch (error: any) {
+      // ODOMÈTRE INVALIDE
+      if (error.details?.error === 'Odomètre invalide') {
+        toast({
+          title: t('fuel.odometerInvalid'),
+          description: t('fuel.lastOdometerWas', { 
+            odo: error.details.dernier_odometre 
+          }),
+          variant: 'destructive',
+          duration: 8000,
+        });
+        return;
+      }
+  
+      // AUTRES ERREURS
       toast({
         title: t('errors.generic'),
-        description: String(error),
+        description: error.message || t('errors.tryAgain'),
         variant: 'destructive',
       });
     }

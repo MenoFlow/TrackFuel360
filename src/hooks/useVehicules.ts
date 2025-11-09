@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Vehicule } from '@/types';
-import { mockVehicules } from '@/lib/mockData';
+// import { mockVehicules } from '@/lib/mockData';
 
 // Simulation d'API avec délai
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -20,12 +20,12 @@ export const useVehicules = () => {
     queryKey: ['vehicules'],
     queryFn: async (): Promise<Vehicule[]> => {
       // TODO: Remplacer par un vrai appel API
-      // const response = await fetch(`${API_BASE_URL}`);
-      // if (!response.ok) throw new Error('Erreur lors de la récupération des véhicules');
-      // return response.json();
+      const response = await fetch(`${API_BASE_URL}`);
+      if (!response.ok) throw new Error('Erreur lors de la récupération des véhicules');
+      return response.json();
       
-      await delay(300);
-      return mockVehicules;
+      // await delay(300);
+      // return mockVehicules;
     },
   });
 };
@@ -37,21 +37,18 @@ export const useVehicules = () => {
  * Params: id (string)
  * Response: Vehicule | undefined
  */
-export const useVehicule = (id: string) => {
+export const useVehicule = (id: number) => {
   return useQuery({
     queryKey: ['vehicules', id],
     queryFn: async (): Promise<Vehicule | undefined> => {
       // TODO: Remplacer par un vrai appel API
-      // const response = await fetch(`${API_BASE_URL}/${id}`);
-      // if (!response.ok) throw new Error('Véhicule non trouvé');
-      // return response.json();
-      
-      await delay(200);
-      return mockVehicules.find(v => v.immatriculation === id);
+      const response = await fetch(`${API_BASE_URL}/${id}`);
+      if (!response.ok) throw new Error('Véhicule non trouvé');
+      return response.json();
     },
     enabled: !!id,
   });
-};
+};  
 
 /**
  * Hook: useCreateVehicule
@@ -66,17 +63,14 @@ export const useCreateVehicule = () => {
   return useMutation({
     mutationFn: async (newVehicule: Omit<Vehicule, 'id'>): Promise<Vehicule> => {
       // TODO: Remplacer par un vrai appel API
-      // const response = await fetch(`${API_BASE_URL}`, {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(newVehicule),
-      // });
-      // if (!response.ok) throw new Error('Erreur lors de la création du véhicule');
-      // return response.json();
+      const response = await fetch(`${API_BASE_URL}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newVehicule),
+      });
+      if (!response.ok) throw new Error('Erreur lors de la création du véhicule');
+      return response.json();
       
-      await delay(500);
-      const vehicule = { ...newVehicule, id: Date.now() };
-      return vehicule;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicules'] });
@@ -98,18 +92,37 @@ export const useUpdateVehicule = () => {
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<Vehicule> }): Promise<Vehicule> => {
       // TODO: Remplacer par un vrai appel API
-      // const response = await fetch(`${API_BASE_URL}/${id}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(data),
-      // });
-      // if (!response.ok) throw new Error('Erreur lors de la mise à jour du véhicule');
-      // return response.json();
-      
-      await delay(500);
-      const vehicule = mockVehicules.find(v => v.id === id);
-      if (!vehicule) throw new Error('Véhicule non trouvé');
-      return { ...vehicule, ...data };
+      const response = await fetch(`${API_BASE_URL}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) throw new Error('Erreur lors de la mise à jour du véhicule');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['vehicules'] });
+    },
+  });
+};
+
+/**
+ * Hook: useDeleteVehicule
+ * API Endpoint: DELETE /api/vehicules/:id
+ * Description: Supprime un véhicule existant
+ * Params: id (string)
+ * Response: void
+ */
+export const useDeleteVehicule = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: number): Promise<void> => {
+      // TODO: Remplacer par un vrai appel API
+      const response = await fetch(`${API_BASE_URL}/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Erreur lors de la suppression du véhicule');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vehicules'] });

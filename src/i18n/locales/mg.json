@@ -374,13 +374,15 @@
       "unitPrice": "Vidiny/iza",
       "pricePerLiter": "Vidiny/L",
       "total": "Fitambatra",
-      "odometer": "Odometara",
+      "odometer": "Odometatra",
       "station": "Toerana fidirana",
       "receipt": "Fakàna sary fandraisana",
       "entryType": "Karazana fidirana",
       "automatic": "Automatic",
       "automaticShort": "Auto",
-      "manual": "Tanana"
+      "manual": "Tanana",
+      "odometerInvalid": "Odometatra tsy mety",
+      "lastOdometerWas": "Ny odometatra farany voarakitra dia {{odo}} km"
     },
     "alerts": {
       "title": "Fikajiana fanairana",
@@ -627,7 +629,16 @@
       "sending": "Alefa...",
       "sendRequest": "Alefa fangatahana",
       "requestSent": "Fangatahana nalefa",
-      "requestSentDesc": "Ny fangatahana fanitsiana dia nalefa soa aman-tsara."
+      "requestSentDesc": "Ny fangatahana fanitsiana dia nalefa soa aman-tsara.",
+      "fieldToCorrect": "Tanjona tokony ahitsy",
+      "currentValue": "Sandan’izao",
+      "newValue": "Sandan vaovao",
+      "enterNewValue": "Ampidiro ny sanda vaovao",
+      "distanceKm": "Elanelana (km)",
+      "liters": "Litatra",
+      "odometer": "Odomètre",
+      "validNumberRequired": "Ampidiro isa manankery azafady"
+
     },
     "comparison": {
       "title": "Fampitahana flottana",

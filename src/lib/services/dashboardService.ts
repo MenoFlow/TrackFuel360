@@ -27,7 +27,7 @@ export function calculerDashboardStats(
   const alertes_actives = alertes.filter(a => a.status === 'new').length;
   
   // Calculs carburant et distance
-  const litres_mois = pleinsMois.reduce((sum, p) => sum + p.litres, 0);
+  const litres_mois = pleinsMois.reduce((sum, p) => sum + Number(p.litres), 0);
   const cout_carburant_mois = pleinsMois.reduce((sum, p) => sum + (p.litres * p.prix_unitaire), 0);
   const distance_mois_km = trajetsMois.reduce((sum, t) => sum + t.distance_km, 0);
   
@@ -80,7 +80,7 @@ export function calculerDashboardStats(
     vehicules_actifs,
     alertes_actives,
     cout_carburant_mois: Number(cout_carburant_mois.toFixed(2)),
-    litres_mois: Number(litres_mois.toFixed(1)),
+    litres_mois: Number(Number(litres_mois)?.toFixed(1)),
     distance_mois_km: Number(distance_mois_km.toFixed(1)),
     consommation_moyenne_flotte,
     top_vehicules_consommation: vehiculesConsommation

@@ -19,7 +19,7 @@ export function GeofenceDialog({ open, onOpenChange, onSave, editingGeofence }: 
   const { t } = useTranslation();
   const [name, setName] = useState('');
   const [type, setType] = useState<GeofenceType>('depot');
-
+  console.log(editingGeofence);
   useEffect(() => {
     if (open) {
       if (editingGeofence) {

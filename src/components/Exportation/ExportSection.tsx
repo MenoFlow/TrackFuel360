@@ -12,10 +12,39 @@ import { ExportProgress } from "./ExportProgress";
 import { ExportHistory } from "./ExportHistory";
 import { ExportPreview } from "./ExportPreview";
 import { MotionLayout } from "../Layout/MotionLayout";
-import { mockDataByType } from "@/lib/mockData";
+import { useAggregatedData } from "@/lib/mockData";
 import { useTranslation } from "react-i18next";
 
 export const ExportSection = () => {
+    const {
+      users,
+      vehicules,
+      sites,
+      affectations,
+      corrections,
+      params,
+      trajets,
+      traceGPSPoints,
+      pleins,
+      niveauxCarburant,
+      pleinExifMetadata,
+      geofences,
+    } = useAggregatedData();
+  
+    const dataByType: Record<string, any[]> = {
+      Site: sites,
+      Geofence: geofences,
+      User: users,
+      Vehicule: vehicules,
+      Affectation: affectations,
+      Trip: trajets,
+      TraceGps: traceGPSPoints,
+      Plein: pleins,
+      PleinExifMetadata: pleinExifMetadata,
+      NiveauCarburant: niveauxCarburant,
+      Parametre: [params],
+      Correction: corrections,
+    };
   const { t } = useTranslation();
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [exportFormat, setExportFormat] = useState<string>("excel");
@@ -45,7 +74,7 @@ export const ExportSection = () => {
       setExportStatus(t('export.progressDescription'));
       setExportProgress(50);
       
-      const blob = generateStyledExcelFile(selectedTypes, exportFormat);
+      const blob = generateStyledExcelFile(selectedTypes, exportFormat, dataByType);
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       setExportStatus(t('export.progress'));
@@ -63,7 +92,7 @@ export const ExportSection = () => {
       setLastExportUrl(url);
 
       const totalRows = selectedTypes.reduce((acc, type) => {
-        const data = mockDataByType[type as keyof typeof mockDataByType] || [];
+        const data = dataByType[type as keyof typeof dataByType] || [];
         return acc + (Array.isArray(data) ? data.length : 1);
       }, 0);
 
@@ -104,7 +133,7 @@ export const ExportSection = () => {
   };
 
   const handleDownloadFromHistory = (item: ExportHistoryType) => {
-    const blob = generateStyledExcelFile(item.types, item.format);
+    const blob = generateStyledExcelFile(item.types, item.format, dataByType);
     downloadFile(blob, item.filename);
     toast.success(t('export.success'));
   };
@@ -226,6 +255,7 @@ export const ExportSection = () => {
         onClose={() => setShowPreview(false)}
         selectedTypes={selectedTypes}
         onConfirm={handleConfirmExport}
+        dataByType={dataByType}
       />
     </Card>
   );

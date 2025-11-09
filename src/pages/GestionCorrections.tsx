@@ -96,14 +96,14 @@ const GestionCorrections = () => {
 
   const handleOpenDetails = (correction: Correction) => {
     setSelectedCorrection(correction);
-    
     // Calculer la validation si c'est une correction de plein
-    if (correction.table === 'plein') {
-      const plein = pleins?.find(p => p.id === correction.record_id);
-      const vehicule = vehicules?.find(v => v.id === plein?.vehicule_id);
+    if (correction.table === 'pleins') {
+      
+      const plein = pleins?.find(p => (p.id).toString() === correction.record_id.toString());
+      const vehicule = vehicules?.find(v => (v.id).toString() === plein?.vehicule_id.toString());
       
       if (plein && vehicule && pleins) {
-        const previousPleins = pleins.filter(p => p.vehicule_id === vehicule.id);
+        const previousPleins = pleins.filter(p => (p.vehicule_id).toString() === vehicule.id.toString());
         const result = validateCorrectionPlein(correction, plein, vehicule, previousPleins);
         setValidationResult(result);
       }

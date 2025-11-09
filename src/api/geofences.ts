@@ -1,5 +1,5 @@
 import { Geofence, GeofenceType } from '@/types';
-import { mockGeofences } from '@/lib/mockData';
+// import { mockGeofences } from '@/lib/mockData';
 
 /**
  * ============================================
@@ -25,6 +25,8 @@ import { mockGeofences } from '@/lib/mockData';
  */
 
 const STORAGE_KEY = 'geofences_data';
+const API_BASE_URL = '/api/geofences';
+
 
 /**
  * Récupère toutes les geofences depuis le localStorage (mock)
@@ -37,20 +39,26 @@ const STORAGE_KEY = 'geofences_data';
  */
 export async function fetchGeofences(): Promise<Geofence[]> {
   // Simulation d'un délai réseau
-  await new Promise(resolve => setTimeout(resolve, 300));
   
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return JSON.parse(stored);
-    }
+    // const stored = localStorage.getItem(STORAGE_KEY);
+    // if (stored) {
+    //   return JSON.parse(stored);
+    // }
+    // console.log(stored);
+
+    const response = await fetch(`${API_BASE_URL}`);
+    if (!response.ok) throw new Error('Erreur lors de la récupération des utilisateurs');
+    const data = await response.json();
+    // const data = mockGeofences;
+    // console.log(mockGeofences);
     
     // Initialiser avec les données mockées si aucune donnée n'existe
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(mockGeofences));
-    return mockGeofences;
+    // localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    return data;
   } catch (error) {
     console.error('Erreur lors du chargement des geofences:', error);
-    return mockGeofences;
+    return [];
   }
 }
 

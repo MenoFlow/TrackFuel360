@@ -1,9 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MainLayout } from '@/components/Layout/MainLayout';
-import { useAlertes, useUpdateAlerteStatus } from '@/hooks/useAlertes';
-import { useVehicules } from '@/hooks/useVehicules';
-import { usePleins } from '@/hooks/usePleins';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,14 +19,25 @@ import { staggerContainer, staggerItem } from '@/lib/utils/motionVariants';
 import { MotionWrapper } from '@/components/Layout/MotionWrapper';
 import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { toast } from 'sonner';
+import { generateAlertes } from '@/lib/services/alerteService';
+import { useAggregatedData } from '@/lib/mockData';
 
 const Alertes = () => {
+    const { vehicules, trajets, pleins, niveauxCarburant, geofences, pleinExifMetadata, traceGPSPoints, params } = useAggregatedData();
+  
+  const alertes = generateAlertes(
+    vehicules,
+    trajets,
+    pleins,
+    niveauxCarburant,
+    geofences,
+    pleinExifMetadata,
+    traceGPSPoints,
+    params
+  );
+
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { data: alertes, isLoading } = useAlertes();
-  const { data: vehicules } = useVehicules();
-  const { data: pleins } = usePleins();
-  const updateAlerteStatus = useUpdateAlerteStatus();
 
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -107,7 +115,7 @@ const Alertes = () => {
                 {filteredAlertes?.length || 0} {t('alerts.alertsDetected')}
               </p>
             </div>
-            {filteredAlertes && filteredAlertes.length > 0 && (
+            {/* {filteredAlertes && filteredAlertes.length > 0 && (
               <Button 
                 variant="destructive" 
                 size="sm"
@@ -116,7 +124,7 @@ const Alertes = () => {
                 <Trash2 className="h-4 w-4 mr-2" />
                 {t('common.delete')} {t('common.all')}
               </Button>
-            )}
+            )} */}
           </div>
         </MotionWrapper>
 
@@ -191,7 +199,7 @@ const Alertes = () => {
         </Card>
         </MotionWrapper>
 
-        {isLoading ? (
+        {false ? (
           <div className="space-y-4">
             {[1, 2, 3].map(i => <Skeleton key={i} className="h-32" />)}
           </div>
@@ -250,7 +258,7 @@ const Alertes = () => {
                                 {t('alerts.viewProof')}
                               </Button>
                             )}
-                            <Button 
+                            {/* <Button 
                               variant="outline" 
                               size="sm"
                               className="w-full sm:w-auto"
@@ -258,17 +266,17 @@ const Alertes = () => {
                             >
                               <Trash2 className="h-4 w-4 mr-1" />
                               <span className="hidden md:inline">{t('common.delete')}</span>
-                            </Button>
+                            </Button> */}
                             {alerte.status === 'new' && (
                               <>
-                                <Button variant="outline" size="sm" className="w-full sm:w-auto">
+                                {/* <Button variant="outline" size="sm" className="w-full sm:w-auto">
                                   <CheckCircle className="h-4 w-4 mr-1" />
                                   <span className="hidden md:inline">{t('alerts.resolve')}</span>
                                 </Button>
                                 <Button variant="outline" size="sm" className="w-full sm:w-auto">
                                   <XCircle className="h-4 w-4 mr-1" />
                                   <span className="hidden md:inline">{t('alerts.ignore')}</span>
-                                </Button>
+                                </Button> */}
                               </>
                             )}
                             {alerte.status === 'resolved' && (

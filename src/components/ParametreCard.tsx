@@ -1,4 +1,4 @@
-import { Parametre } from "@/lib/mockData";
+import {  Parametre } from "@/lib/data/mockData.parametres";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useTranslation } from "react-i18next";
@@ -18,7 +18,6 @@ const ParametreCard = ({ parametre, value, onChange }: ParametreCardProps) => {
       onChange(parametre.id, newValue);
     }
   };
-  console.log(parametre);
 
   const label = t(`notification.param.${parametre.id}.label`);
   const description = t(`notification.param.${parametre.id}.description`);
@@ -50,7 +49,7 @@ const ParametreCard = ({ parametre, value, onChange }: ParametreCardProps) => {
             onChange={handleChange}
             min={parametre.min}
             max={parametre.max}
-            step={parametre.id.includes("pct") ? 1 : parametre.id.includes("litres") ? 0.1 : 0.5}
+            step={parametre?.id?.includes("pct") ? 1 : parametre?.id?.includes("litres") ? 0.1 : 0.5}
             className="flex-1 text-lg font-medium h-12"
             aria-label={`${label}: ${value} ${parametre.unite}`}
             aria-describedby={`${parametre.id}-range`}

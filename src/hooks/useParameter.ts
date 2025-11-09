@@ -51,15 +51,13 @@ export const useParametres = () => {
   // BACKEND: PUT /api/params
   // Request Body: { parametres: Parametre[] }
   const saveMutation = useMutation({
-    mutationFn: parametresApi.saveParametres,
+    mutationFn: (parametres: Parametre[]) => parametresApi.saveParametres(parametres), // AJOUTÉ
     onSuccess: (data) => {
-      // Mise à jour optimiste du cache
-      queryClient.setQueryData(["parametres"], data);
+      queryClient.setQueryData(["parametres"], data); // OK
     },
     onError: (error) => {
-      console.error("Erreur lors de la sauvegarde:", error);
-      // En cas d'erreur, on pourrait invalider le cache pour recharger les données
-      // queryClient.invalidateQueries({ queryKey: ["parametres"] });
+      console.error("Erreur sauvegarde:", error);
+      queryClient.invalidateQueries({ queryKey: ["parametres"] }); // AJOUTÉ
     },
   });
 

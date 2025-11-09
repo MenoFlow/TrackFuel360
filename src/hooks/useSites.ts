@@ -3,13 +3,17 @@ import { Site } from '@/types';
 import { mockSites } from '@/lib/data/mockData.base';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+const API_BASE_URL = '/api/sites';
+
 
 export const useSites = () => {
   return useQuery({
     queryKey: ['sites'],
     queryFn: async (): Promise<Site[]> => {
-      await delay(300);
-      return mockSites;
+      const response = await fetch(`${API_BASE_URL}`);
+      if (!response.ok) throw new Error('Erreur lors de la récupération des sites');
+      const data = await response.json();
+      return data;
     },
   });
 };
@@ -25,48 +29,48 @@ export const useSite = (id: number) => {
   });
 };
 
+// CREATE
 export const useCreateSite = () => {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: async (newSite: Omit<Site, 'id'>): Promise<Site> => {
-      await delay(500);
-      const site = { ...newSite, id: Date.now() };
-      return site;
+      const res = await fetch(API_BASE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSite),
+      });
+      if (!res.ok) throw new Error('Échec création');
+      return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sites'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sites'] }),
   });
 };
 
+// UPDATE
 export const useUpdateSite = () => {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<Site> }): Promise<Site> => {
-      await delay(500);
-      const site = mockSites.find(s => s.id === id);
-      if (!site) throw new Error('Site non trouvé');
-      return { ...site, ...data };
+      const res = await fetch(`${API_BASE_URL}/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error('Échec mise à jour');
+      return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sites'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sites'] }),
   });
 };
 
+// DELETE
 export const useDeleteSite = () => {
   const queryClient = useQueryClient();
-  
   return useMutation({
     mutationFn: async (id: number): Promise<void> => {
-      await delay(500);
-      const index = mockSites.findIndex(s => s.id === id);
-      if (index === -1) throw new Error('Site non trouvé');
+      const res = await fetch(`${API_BASE_URL}/${id}`, { method: 'DELETE' });
+      if (!res.ok && res.status !== 404) throw new Error('Échec suppression');
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sites'] });
-    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sites'] }),
   });
 };
