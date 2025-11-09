@@ -4,7 +4,9 @@ import { OfflineService } from '@/lib/services/offlineService';
 import { useOnlineStatus } from './useOnlineStatus';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-const API_BASE_URL = '/api/trajets';
+const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
+
+const API_BASE_URL = API_BASE+'/api/trajets';
 
 export const useTrajets = (vehiculeId?: number) => {
   const isOnline = useOnlineStatus();

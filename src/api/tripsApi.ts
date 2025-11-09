@@ -8,9 +8,11 @@
  * - PUT /api/trips/:id
  * - DELETE /api/trips/:id
  */
+
  
 // import { consolidateTripsWithTraceGps } from "@/lib/mockData";
 import { Trip, TripInput } from "@/types/trip";
+const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
 // Mock data
 // const MOCK_TRIPS: Trip[] = consolidateTripsWithTraceGps();
@@ -26,7 +28,7 @@ export async function fetchTrips(vehiculeId: number): Promise<Trip[]> {
   await delay(500); // Simulate network latency
   
   // TODO: Replace with real API call
-  const response = await fetch("/api/trajets");
+  const response = await fetch(API_BASE+"/api/trajets");
   if (!response.ok) throw new Error('Failed to fetch trips');
   const data = await response.json();
   // console.log(data);
@@ -47,7 +49,7 @@ export async function createTrip(data: TripInput): Promise<Trip> {
   await delay(800); // Simulate network latency
   console.log(data);
   // TODO: Replace with real API call
-  const response = await fetch('/api/trajets', {
+  const response = await fetch(API_BASE+'/api/trajets', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -64,7 +66,7 @@ export async function updateTrip(id: number, data: TripInput): Promise<Trip> {
   await delay(800); // Simulate network latency
   
   // TODO: Replace with real API call
-  const response = await fetch(`/api/trajets/${id}`, {
+  const response = await fetch(`${API_BASE}/api/trajets/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -81,7 +83,7 @@ export async function deleteTrip(id: number): Promise<void> {
   await delay(500); // Simulate network latency
   
   // TODO: Replace with real API call
-  const response = await fetch(`/api/trajets/${id}`, {
+  const response = await fetch(`${API_BASE}/api/trajets/${id}`, {
     method: 'DELETE',
   });
   if (!response.ok) throw new Error('Failed to delete trip');

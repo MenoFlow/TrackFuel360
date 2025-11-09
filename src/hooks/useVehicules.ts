@@ -6,7 +6,8 @@ import { Vehicule } from '@/types';
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // API Configuration
-const API_BASE_URL = '/api/vehicules';
+const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
+const API_BASE_URL = API_BASE+'/api/vehicules';
 
 /**
  * Hook: useVehicules

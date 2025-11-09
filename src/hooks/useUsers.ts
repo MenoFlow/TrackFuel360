@@ -2,7 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { User } from '@/types';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-const API_BASE_URL = '/api/users';
+const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
+const API_BASE_URL = API_BASE+'/api/users';
 
 // Simulate current user (for demo purposes)
 let currentUserId = 1; // Default admin

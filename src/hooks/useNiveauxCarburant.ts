@@ -3,7 +3,9 @@ import { NiveauCarburant } from '@/types';
 // import { mockNiveauxCarburant } from '@/lib/mockData';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-const API_BASE_URL = '/api/niveau-carbu';
+const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
+
+const API_BASE_URL = API_BASE+'/api/niveau-carbu';
 
 export const useNiveauxCarburant = (vehiculeId?: number) => {
   return useQuery({

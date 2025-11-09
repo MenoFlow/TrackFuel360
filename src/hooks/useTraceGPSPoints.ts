@@ -9,7 +9,8 @@ export type TraceGps = {
   timestamp: string; // ISO string
 };
 
-const API_BASE_URL = '/api/trace-gps';
+const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
+const API_BASE_URL = API_BASE+'/api/trace-gps';
 
 export const useTraceGps = (trajetId?: number) => {
   return useQuery({

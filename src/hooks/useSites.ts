@@ -3,7 +3,9 @@ import { Site } from '@/types';
 import { mockSites } from '@/lib/data/mockData.base';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-const API_BASE_URL = '/api/sites';
+const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
+
+const API_BASE_URL = API_BASE+'/api/sites';
 
 
 export const useSites = () => {

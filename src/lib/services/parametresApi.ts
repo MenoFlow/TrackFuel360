@@ -4,7 +4,9 @@ import { Parametre, parametresData } from "@/lib/data/mockData.parametres";
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // URL de base de l'API - À configurer selon l'environnement
-const API_BASE_URL = '/api/parametres';
+const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
+
+const API_BASE_URL = API_BASE+'/api/parametres';
 //import.meta.env.VITE_API_URL || 
 
 /**

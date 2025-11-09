@@ -25,7 +25,9 @@ import { Geofence, GeofenceType } from '@/types';
  */
 
 const STORAGE_KEY = 'geofences_data';
-const API_BASE_URL = '/api/geofences';
+const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
+
+const API_BASE_URL = API_BASE+'/api/geofences';
 
 
 /**

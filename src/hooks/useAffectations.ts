@@ -1,7 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Affectation } from '@/types';
 
-const API_BASE_URL = '/api/affectations';
+const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
+
+const API_BASE_URL = API_BASE+'/api/affectations';
 
 // GET ALL + FILTER
 export const useAffectations = (chauffeurId?: number, vehiculeId?: number) => {

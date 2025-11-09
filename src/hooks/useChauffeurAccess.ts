@@ -65,7 +65,7 @@ export const useChauffeurAccess = () => {
   
     return vehicules.filter(v => assignedVehicleIds.includes(v.id));
   };
-  
+
 
   return {
     currentUser,

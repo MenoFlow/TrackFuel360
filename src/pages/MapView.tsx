@@ -65,20 +65,22 @@ type VehicleWithPosition = Vehicule & {
 };
 
 /* ==================== API FETCHERS ==================== */
+const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
+
 const fetchVehicules = async (): Promise<Vehicule[]> => {
-  const res = await fetch('/api/vehicules');
+  const res = await fetch(API_BASE+'/api/vehicules');
   if (!res.ok) throw new Error('Erreur véhicules');
   return res.json();
 };
 
 const fetchTrips = async (): Promise<Trip[]> => {
-  const res = await fetch('/api/trajets');
+  const res = await fetch(API_BASE+'/api/trajets');
   if (!res.ok) throw new Error('Erreur trajets');
   return res.json();
 };
 
 const fetchTraceGps = async (): Promise<TraceGpsPoint[]> => {
-  const res = await fetch('/api/trace-gps');
+  const res = await fetch(API_BASE+'/api/trace-gps');
   if (!res.ok) throw new Error('Erreur trace GPS');
   return res.json();
 };

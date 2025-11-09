@@ -1,11 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { PleinExifMetadata } from '@/types';
-import { mockPleinExifMetadata } from '@/lib/data/mockData.fuel';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-const API_BASE_URL = '/api/plein-exif';
+const API_BASE = import.meta.env.VITE_API_BASE_URL as string;
 
-
+const API_BASE_URL = API_BASE+'/api/plein-exif';
 
 // hooks/usePleinMetadata.ts
 export const usePleinMetadata = (pleinId?: number) => {

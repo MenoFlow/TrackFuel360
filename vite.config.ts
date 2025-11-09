@@ -8,18 +8,18 @@ export default defineConfig(({ mode }) => ({
     host: true,
     port: 8080,
     allowedHosts: true,
-    proxy: {
-      '/api': {
-        target: 'http://92.112.181.198:8086',
-        changeOrigin: true,
-        secure: false,
-      },
-      '/uploads': {
-        target: 'http://92.112.181.198:8086',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
+    // proxy: {
+    //   '/api': {
+    //     target: 'http://92.112.181.198:8086',
+    //     changeOrigin: true,
+    //     secure: false,
+    //   },
+    //   '/uploads': {
+    //     target: 'http://92.112.181.198:8086',
+    //     changeOrigin: true,
+    //     secure: false,
+    //   },
+    // },
   },
 
   plugins: [react(),
